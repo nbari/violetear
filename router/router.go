@@ -4,24 +4,29 @@ import (
 	"fmt"
 )
 
-type Hosts struct {
-	host  string
-	vroot string
-}
-
 type Route struct {
-	regex   string
 	handler string
 	method  []string
 }
 
 type Router struct {
-	host   string
-	routes []Route
+	// vroute, regex
+	routes map[string]map[string]Route
 }
 
 func main() {
-	var route = Route{"regex", "handler", []string{"ALL"}}
-	var r = Router{"default", []Route{route}}
+	var r = Router{
+		map[string]map[string]Route{
+			"vroot1": map[string]Route{
+				"regexA": Route{"handler", []string{"ALL"}},
+				"regexB": Route{"handler", []string{"ALL"}},
+				"regexC": Route{"handler", []string{"ALL"}},
+			},
+			"vroot2": map[string]Route{
+				"regexA": Route{"handler", []string{"ALL"}},
+				"regexB": Route{"handler", []string{"ALL"}},
+				"regexC": Route{"handler", []string{"ALL"}},
+			},
+		}}
 	fmt.Println(r)
 }
