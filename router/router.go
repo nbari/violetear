@@ -15,6 +15,12 @@ type Router struct {
 }
 
 func main() {
+	var hosts map[string]string
+	hosts = make(map[string]string)
+	hosts["teste1"] = "vroot1"
+	hosts["teste2"] = "vroot2"
+	fmt.Println(hosts)
+
 	var r = Router{
 		map[string]map[string]Route{
 			"vroot1": map[string]Route{
