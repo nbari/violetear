@@ -4,35 +4,45 @@ import (
 	"fmt"
 )
 
+type Hosts struct {
+	host, vroot string
+}
+
 type Route struct {
-	handler string
-	method  []string
+	regex, handler string
+}
+
+type Methods struct {
+	methods map[string]struct{}
 }
 
 type Router struct {
-	// vroute, regex
-	routes map[string]map[string]Route
+	routes map[Hosts]map[Route]Methods
 }
 
 func main() {
-	var hosts map[string]string
-	hosts = make(map[string]string)
-	hosts["teste1"] = "vroot1"
-	hosts["teste2"] = "vroot2"
-	fmt.Println(hosts)
 
 	var r = Router{
-		map[string]map[string]Route{
-			"vroot1": map[string]Route{
-				"regexA": Route{"handler", []string{"ALL"}},
-				"regexB": Route{"handler", []string{"ALL"}},
-				"regexC": Route{"handler", []string{"ALL"}},
+		map[Hosts]map[Route]Methods{
+			Hosts{"*", "vroot"}: {
+				Route{"r2", "h"}: Methods{map[string]struct{}{
+					"post": {},
+					"get":  {},
+				}},
+				Route{"r3", "h"}: Methods{map[string]struct{}{
+					"post": {},
+					"get":  {},
+				}},
 			},
-			"vroot2": map[string]Route{
-				"regexA": Route{"handler", []string{"ALL"}},
-				"regexB": Route{"handler", []string{"ALL"}},
-				"regexC": Route{"handler", []string{"ALL"}},
+			Hosts{"*", "vroot2"}: {
+				Route{"r2", "h"}: Methods{map[string]struct{}{
+					"PUT":  {},
+					"GET":  {},
+					"POST": {},
+				}},
 			},
-		}}
+		},
+	}
+
 	fmt.Println(r)
 }
