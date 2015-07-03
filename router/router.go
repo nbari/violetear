@@ -4,45 +4,48 @@ import (
 	"fmt"
 )
 
-type Hosts struct {
-	host, vroot string
-}
-
 type Route struct {
-	regex, handler string
-}
-
-type Methods struct {
-	methods map[string]struct{}
+	handler string
+	methods []string
 }
 
 type Router struct {
-	routes map[Hosts]map[Route]Methods
+	routes map[string]map[string]Route
 }
 
 func main() {
 
+	/**
+	 *	Set hosts
+	 *  (regex|host): vroot
+	 */
+	hosts := map[string]string{
+		"*":      "vroot1",
+		"*.test": "vroot1",
+		".com":   "vroot1",
+	}
+	fmt.Println(hosts)
+	fmt.Println(hosts[".com"])
+
+	/**
+	 * Routes
+	 * vroot: routes{"regex", "handler", Methods}
+	 */
 	var r = Router{
-		map[Hosts]map[Route]Methods{
-			Hosts{"*", "vroot"}: {
-				Route{"r2", "h"}: Methods{map[string]struct{}{
-					"post": {},
-					"get":  {},
-				}},
-				Route{"r3", "h"}: Methods{map[string]struct{}{
-					"post": {},
-					"get":  {},
-				}},
+		map[string]map[string]Route{
+			"vroot1": {
+				"r1": Route{"r2", []string{"post", "get"}},
 			},
-			Hosts{"*", "vroot2"}: {
-				Route{"r2", "h"}: Methods{map[string]struct{}{
-					"PUT":  {},
-					"GET":  {},
-					"POST": {},
-				}},
+			"vroot2": {
+				"r1": Route{"r2", []string{"post", "get"}},
 			},
 		},
 	}
 
-	fmt.Println(r)
+	fmt.Println(r, r.routes)
+	fmt.Println(r.routes[hosts[".com"]])
+	fmt.Println(r.routes[hosts[".com"]]["r1"])
+	fmt.Println(r.routes[hosts[".com"]]["r1"].handler)
+	fmt.Println(r.routes[hosts[".com"]]["r1"].methods)
+
 }
