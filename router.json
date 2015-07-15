@@ -1,21 +1,28 @@
 {
     "vroot_1": {
-        "/(md5|sha1|sha256|sha512)(/.*)?": {
-            "handler": ["GET", "POST"]
+        "static": {
+            "/test": {
+                "test_handler": ["GET"]
+            }
         },
-        "/upload/?.*": {
-            "upload": ["PUT", "POST"]
-        },
-        "/test": {
-            "test_handker": ["GET"]
+        "dynamic": {
+            "/(md5|sha1|sha256|sha512)(/.*)?": {
+                "handler": ["GET", "POST"]
+            },
+            "/upload/?.*": {
+                "upload": ["PUT", "POST"]
+            }
         }
     },
     "vroot_2": {
-        "/.*": {
-            "default_handler": []
-        },
-        "/test": {
-            "test_handler": ["POST, GET"]
+        "static": {},
+        "dynamic": {
+            "/.*": {
+                "default_handler": []
+            },
+            "/test": {
+                "test_handler": ["POST, GET"]
+            }
         }
     }
 }
