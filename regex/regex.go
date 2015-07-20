@@ -12,18 +12,28 @@ type routes struct {
 
 func main() {
 
-	//	var routes Dynamic
+	dynamic_route := make(map[string]string)
 
-	r := regexp.MustCompile("p([a-z]+)ch")
+	dynamic_route["r_1"] = "p([a-z]+)ch"
+	dynamic_route["r_2"] = "p([a-z0-9]+)ch"
+	dynamic_route["r_3"] = "/simple"
 
-	route := routes{
-		dynamic: map[string]regexp.Regexp{
-			"test": *r,
-		},
+	dynamic_set := make(map[string]regexp.Regexp)
+
+	for k, v := range dynamic_route {
+		r := regexp.MustCompile(v)
+		dynamic_set[k] = *r
 	}
 
-	//	fmt.Println(set)
-	fmt.Println(route.dynamic["test"])
+	strings := []string{"peach", "peach2", "p3ch", "/simple"}
+
+	for _, s := range strings {
+		for k, v := range dynamic_set {
+			if v.MatchString(s) {
+				fmt.Printf("Match %s -> %v [%v]\n", dynamic_route[k], s, k)
+			}
+		}
+	}
 
 	//fmt.Println(reflect.TypeOf(r))
 
