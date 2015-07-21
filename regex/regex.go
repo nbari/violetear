@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	_ "reflect"
 	"regexp"
 )
 
@@ -25,7 +24,7 @@ func main() {
 		dynamic_set[k] = *r
 	}
 
-	strings := []string{"peach", "peach2", "p3ch", "/simple"}
+	strings := []string{"peach", "peach2", "p3ch", "^/simple$"}
 
 	for _, s := range strings {
 		for k, v := range dynamic_set {
