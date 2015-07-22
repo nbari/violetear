@@ -1,0 +1,15 @@
+{
+    "hosts": [{
+        "host": "*",
+        "vroot": "default"
+    }, {
+        "host": "*.zunzun.io",
+        "vroot": "default"
+    }, {
+        "host": "ejemplo.org",
+        "vroot": "ejemplo"
+    }, {
+        "host": "api.ejemplo.org",
+        "vroot": "ejemplo"
+    }]
+}
