@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 )
 
-<<<<<<< HEAD
 type H struct {
 	host, vroot string
 }
