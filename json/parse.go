@@ -17,10 +17,7 @@ type Host struct {
 	Vroot string
 }
 
-type Handler struct {
-	Default []HandlerData
-	Extra   []HandlerData
-}
+type Handler map[string][]HandlerData
 
 type HandlerData struct {
 	URL     string

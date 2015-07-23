@@ -10,10 +10,7 @@ type Something struct {
 	Handlers Handler
 }
 
-type Handler struct {
-	Default []HandlerData
-	Extra   []HandlerData
-}
+type Handler map[string][]HandlerData
 
 type HandlerData struct {
 	URL     string
