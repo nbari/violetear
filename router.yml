@@ -16,7 +16,7 @@ hosts:
  - host: api.ejemplo.org
    vroot: ejemplo
 
-handlers:
+routes:
  default:
    - url: /test/.*
      handler: test
