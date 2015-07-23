@@ -40,5 +40,11 @@ func main() {
 	}
 
 	//fmt.Println(data)
-	fmt.Printf("%+v\n", data)
+	//	fmt.Printf("%+v\n", data)
+	fmt.Println(data.Handlers["default"])
+
+	for k, v := range data.Handlers["default"] {
+		fmt.Println(k, len(v.Methods))
+	}
+
 }
