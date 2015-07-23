@@ -1,0 +1,29 @@
+{
+    "handlers": {
+        "default": [{
+            "url": "/test/.*",
+            "handler": "my_handler",
+            "methods": [
+                "GET",
+                "POST",
+                "PUT"
+            ]
+        }, {
+            "url": "/(md5|sha1|sha256|sha512)(/.*)?",
+            "handler": "hash_handler",
+            "methods": [
+                "GET"
+            ]
+        }, {
+            "url": "/.*",
+            "handler": "default"
+        }],
+        "extra": [{
+            "url": "/.*",
+            "handler": "other_handler",
+            "methods": [
+                "ALL"
+            ]
+        }]
+    }
+}
