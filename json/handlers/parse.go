@@ -7,10 +7,8 @@ import (
 )
 
 type Something struct {
-	Handlers Handler
+	Handlers map[string][]HandlerData
 }
-
-type Handler map[string][]HandlerData
 
 type HandlerData struct {
 	URL     string

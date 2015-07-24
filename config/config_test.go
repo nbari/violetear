@@ -3,6 +3,7 @@ package config
 import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"reflect"
 	"testing"
 )
 
@@ -43,6 +44,37 @@ func TestGet(t *testing.T) {
 		if v != hosts[i] {
 			t.Error(i, v, hosts[i])
 		}
+	}
+
+	routes := map[string][]Route{
+		"default": {
+			{
+				"/test/.*", "test", []string{"GET", "POST", "PUT"},
+			},
+			{
+				"/(md5|sha1|sha256|sha512)(/.*)?", "hash", []string{"GET"},
+			},
+			{
+				"/.*", "default", nil,
+			},
+		},
+		"ejemplo": {
+			{
+				"/.*", "default", []string{"ALL"},
+			},
+		},
+	}
+
+	for k, v := range routes {
+		for i, v := range v {
+			if !(reflect.DeepEqual(data.Routes[k][i], v)) {
+				t.Error(data.Routes[k][i], v)
+			}
+		}
+	}
+
+	if !(reflect.DeepEqual(data.Routes, routes)) {
+		t.Error(data.Routes, routes)
 	}
 
 }

@@ -8,7 +8,7 @@ import (
 type Config struct {
 	Versions []string
 	Hosts    []Host
-	Routes   Route
+	Routes   map[string][]Route
 }
 
 type Host struct {
@@ -16,9 +16,7 @@ type Host struct {
 	Vroot string
 }
 
-type Route map[string][]HandlerData
-
-type HandlerData struct {
+type Route struct {
 	URL     string
 	Handler string
 	Methods []string
