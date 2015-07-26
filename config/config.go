@@ -3,6 +3,8 @@ package config
 import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"os/user"
+	"strings"
 )
 
 type Config struct {
@@ -23,6 +25,12 @@ type Route struct {
 }
 
 func Get(file string) Config {
+
+	if file[:2] == "~/" {
+		usr, _ := user.Current()
+		dir := usr.HomeDir
+		file = strings.Replace(file, "~", dir, 1)
+	}
 
 	yml_file, err := ioutil.ReadFile(file)
 	if err != nil {

@@ -2,21 +2,18 @@ package main
 
 import (
 	"fmt"
-	"path/filepath"
+	"os/user"
+	"strings"
 )
 
 func main() {
 
-	paths := []string{
-		"/tmp/",
-		"~/projects",
+	path := "~/projects"
+	if path[:2] == "~/" {
+		usr, _ := user.Current()
+		dir := usr.HomeDir
+		path = strings.Replace(path, "~", dir, 1)
 	}
 
-	base := "/"
-
-	for _, p := range paths {
-		rel, err := filepath.Rel(base, p)
-		fmt.Printf("%q: %q %v\n", p, rel, err)
-	}
-
+	fmt.Println(path)
 }
