@@ -1,47 +1,28 @@
 {
-    "versions": [
-        "v0",
-        "v1",
-        "v2"
-    ],
-    "hosts": [{
-        "host": "*",
-        "vroot": "default"
-    }, {
-        "host": "*.zunzun.io",
-        "vroot": "default"
-    }, {
-        "host": "ejemplo.org",
-        "vroot": "ejemplo"
-    }, {
-        "host": "api.ejemplo.org",
-        "vroot": "ejemplo"
-    }],
-    "handlers": {
-        "default": [{
-            "url": "/test/.*",
-            "handler": "my_handler",
-            "methods": [
-                "GET",
-                "POST",
-                "PUT"
-            ]
-        }, {
-            "url": "/(md5|sha1|sha256|sha512)(/.*)?",
-            "handler": "hash_handler",
-            "methods": [
-                "GET"
-            ]
-        }, {
-            "url": "/.*",
-            "handler": "default"
-        }],
-        "ejemplo": [{
-            "url": "/.*",
-            "handler": "other_handler",
-            "methods": [
-                "ALL"
-            ]
-        }]
+    "vroot_1": {
+        "static": {
+            "/test": {
+                "test_handler": ["GET"]
+            }
+        },
+        "dynamic": {
+            "/(md5|sha1|sha256|sha512)(/.*)?": {
+                "handler": ["GET", "POST"]
+            },
+            "/upload/?.*": {
+                "upload": ["PUT", "POST"]
+            }
+        }
+    },
+    "vroot_2": {
+        "static": {},
+        "dynamic": {
+            "/.*": {
+                "default_handler": []
+            },
+            "/test": {
+                "test_handler": ["POST, GET"]
+            }
+        }
     }
 }
