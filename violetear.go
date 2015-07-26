@@ -12,23 +12,6 @@ import (
 	//"strings"
 )
 
-type Param struct {
-	Key   string
-	Value string
-}
-
-type Route struct {
-	regex   string
-	handler http.Handler
-	method  [3]string
-}
-
-type Router struct {
-	NotFoundHandler  http.Handler
-	MethodNotAllowed http.HandlerFunc
-	routes           []*Route
-}
-
 func (r Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Updated to pass ah.appContext as a parameter to our handler type.
 	status, err := ah.h(ah.appContext, w, r)
