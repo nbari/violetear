@@ -5,14 +5,11 @@
 package violetear
 
 import (
-	"fmt"
-	//"net/url"
-	//"regexp"
-	//"strings"
+//"net/url"
+//"regexp"
+//"strings"
 )
 
-func New() (uuid string) {
-	uuid = "hola"
-	fmt.Println("router")
-	return
+func New(config string) Config {
+	return GetConfig(config)
 }

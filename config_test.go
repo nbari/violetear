@@ -1,4 +1,4 @@
-package config
+package violetear
 
 import (
 	"gopkg.in/yaml.v2"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestGet(t *testing.T) {
+func TestGetConfig(t *testing.T) {
 
 	yml_file, err := ioutil.ReadFile("config_test.yml")
 

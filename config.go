@@ -1,4 +1,4 @@
-package config
+package violetear
 
 import (
 	"gopkg.in/yaml.v2"
@@ -24,7 +24,7 @@ type Route struct {
 	Methods []string
 }
 
-func Get(file string) Config {
+func GetConfig(file string) Config {
 
 	if file[:2] == "~/" {
 		usr, _ := user.Current()
