@@ -14,14 +14,12 @@ type Config struct {
 }
 
 type Host struct {
-	Host  string
-	Vroot string
+	Host, Vroot string
 }
 
 type Route struct {
-	URL     string
-	Handler string
-	Methods []string
+	URL, Handler string
+	Methods      []string
 }
 
 func GetConfig(file string) Config {

@@ -67,13 +67,13 @@ func TestGetConfig(t *testing.T) {
 
 	for k, v := range routes {
 		for i, v := range v {
-			if !(reflect.DeepEqual(data.Routes[k][i], v)) {
+			if !reflect.DeepEqual(data.Routes[k][i], v) {
 				t.Error(data.Routes[k][i], v)
 			}
 		}
 	}
 
-	if !(reflect.DeepEqual(data.Routes, routes)) {
+	if !reflect.DeepEqual(data.Routes, routes) {
 		t.Error(data.Routes, routes)
 	}
 
