@@ -36,6 +36,11 @@ func New(file string) Config {
 	return config
 }
 
-func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+func Add(resource string, handler string, methods []string) Config {
+	var config Config
+	return config
+}
 
+func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	return
 }
