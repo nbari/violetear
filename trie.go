@@ -19,14 +19,6 @@ func NewTrie() *Trie {
 }
 
 func (t *Trie) Set(path []string, handler string, method string, level ...bool) {
-	if len(path) == 0 {
-		methods := strings.Split(method, ",")
-		for _, v := range methods {
-			t.handler[strings.TrimSpace(v)] = handler
-		}
-		return
-	}
-
 	key := path[0]
 	newpath := path[1:]
 
@@ -42,8 +34,18 @@ func (t *Trie) Set(path []string, handler string, method string, level ...bool) 
 		}
 	}
 
+	fmt.Println(val.level, key, newpath)
+
+	if len(newpath) == 0 {
+		methods := strings.Split(method, ",")
+		for _, v := range methods {
+			val.handler[strings.TrimSpace(v)] = handler
+		}
+		return
+	}
+
 	// recursive call with 4 argument set to true so that level can be
-	// increased by 1
+	// increased by 1 if newpath > than 1
 	val.Set(newpath, handler, method, true)
 }
 
