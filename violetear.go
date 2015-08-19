@@ -19,16 +19,7 @@ type Router struct {
 
 	//dynamic (vroot, hosts)
 	DynamicHosts map[string]regexp.Regexp
-
-	StaticRoute map[string]StaticRoute
 }
-
-type StaticRoute struct {
-	URL, handler string
-	Methods      []string
-}
-
-//var _ http.Handler = New()
 
 func New(file string) Config {
 	var config Config
