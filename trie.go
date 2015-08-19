@@ -6,15 +6,15 @@ import (
 )
 
 type Trie struct {
-	node    map[string]*Trie
-	handler map[string]string
-	level   int
+	Node    map[string]*Trie
+	Handler map[string]string
+	Level   int
 }
 
 func NewTrie() *Trie {
 	t := &Trie{}
-	t.node = make(map[string]*Trie)
-	t.handler = make(map[string]string)
+	t.Node = make(map[string]*Trie)
+	t.Handler = make(map[string]string)
 	return t
 }
 
@@ -22,24 +22,22 @@ func (t *Trie) Set(path []string, handler string, method string, level ...bool) 
 	key := path[0]
 	newpath := path[1:]
 
-	val, ok := t.node[key]
+	val, ok := t.Node[key]
 
 	if !ok {
 		val = NewTrie()
-		t.node[key] = val
+		t.Node[key] = val
 
 		// increment level
 		if len(level) > 0 {
-			val.level = t.level + 1
+			val.Level = t.Level + 1
 		}
 	}
-
-	fmt.Println(val.level, key, newpath)
 
 	if len(newpath) == 0 {
 		methods := strings.Split(method, ",")
 		for _, v := range methods {
-			val.handler[strings.TrimSpace(v)] = handler
+			val.Handler[strings.TrimSpace(v)] = handler
 		}
 		return
 	}
@@ -49,22 +47,19 @@ func (t *Trie) Set(path []string, handler string, method string, level ...bool) 
 	val.Set(newpath, handler, method, true)
 }
 
-func (t *Trie) Get(path []string) (level int, handler map[string]string) {
+func (t *Trie) Get(path []string) *Trie {
 
 	key := path[0]
 	newpath := path[1:]
 
-	// check if the node on the trie exists and return current handler
-	if val, ok := t.node[key]; ok {
+	fmt.Println(key, newpath, t.Level)
+
+	if val, ok := t.Node[key]; ok {
 		if len(newpath) == 0 {
-			return val.level, val.handler
+			return val
 		}
 		return val.Get(newpath)
 	}
 
-	///////
-	fmt.Println("find the : regex")
-	////
-
-	return t.level, nil
+	return t
 }
