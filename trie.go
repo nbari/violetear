@@ -1,37 +1,28 @@
 package violetear
 
 import (
+	"fmt"
 	"strings"
 )
 
 type Trie struct {
-	Node    map[string]*Trie
+	node    map[string]*Trie
 	handler map[string]string
+	level   int
 }
 
 func NewTrie() *Trie {
 	t := &Trie{}
-	t.Node = make(map[string]*Trie)
+	t.node = make(map[string]*Trie)
 	t.handler = make(map[string]string)
 	return t
 }
 
-func (t *Trie) Set(path []string, handler string, method ...string) {
-
-	var methods string
-
-	if len(method) > 0 {
-		methods = method[0]
-	}
-
+func (t *Trie) Set(path []string, handler string, method string, level ...bool) {
 	if len(path) == 0 {
-		if len(methods) > 0 {
-			methods := strings.Split(methods, ",")
-			for _, v := range methods {
-				t.handler[strings.TrimSpace(v)] = handler
-			}
-		} else {
-			t.handler["ALL"] = handler
+		methods := strings.Split(method, ",")
+		for _, v := range methods {
+			t.handler[strings.TrimSpace(v)] = handler
 		}
 		return
 	}
@@ -39,28 +30,39 @@ func (t *Trie) Set(path []string, handler string, method ...string) {
 	key := path[0]
 	newpath := path[1:]
 
-	res, ok := t.Node[key]
+	val, ok := t.node[key]
 
 	if !ok {
-		res = NewTrie()
-		t.Node[key] = res
+		val = NewTrie()
+		t.node[key] = val
+
+		// increment level
+		if len(level) > 0 {
+			val.level = t.level + 1
+		}
 	}
 
-	res.Set(newpath, handler, methods)
+	// recursive call with 4 argument set to true so that level can be
+	// increased by 1
+	val.Set(newpath, handler, method, true)
 }
 
-func (t *Trie) Get(path []string) (handler map[string]string, ok bool) {
-	if len(path) == 0 {
-		return t.handler, true
-	}
+func (t *Trie) Get(path []string) (level int, handler map[string]string) {
 
 	key := path[0]
 	newpath := path[1:]
 
-	res, ok := t.Node[key]
-
-	if !ok {
-		return nil, false
+	// check if the node on the trie exists and return current handler
+	if val, ok := t.node[key]; ok {
+		if len(newpath) == 0 {
+			return val.level, val.handler
+		}
+		return val.Get(newpath)
 	}
-	return res.Get(newpath)
+
+	///////
+	fmt.Println("find the : regex")
+	////
+
+	return t.level, nil
 }
