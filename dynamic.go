@@ -7,15 +7,15 @@ import (
 	"strings"
 )
 
-type dynamic_set map[string]regexp.Regexp
+type dynamicSet map[string]regexp.Regexp
 
-func NewDynamic() dynamic_set {
-	return make(dynamic_set)
+func NewDynamicSet() dynamicSet {
+	return make(dynamicSet)
 }
 
-func (d dynamic_set) Set(name string, regex string) error {
+func (d dynamicSet) Set(name string, regex string) error {
 	if !strings.HasPrefix(name, ":") {
-		fmt.Fprintf(os.Stderr, "Dynamic route name must start with colon ':'")
+		fmt.Fprintf(os.Stderr, "Dynamic route name must start with a colon ':'\n")
 		os.Exit(1)
 	}
 

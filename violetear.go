@@ -7,7 +7,6 @@ package violetear
 import (
 	"net/http"
 	"regexp"
-	//"strings"
 )
 
 type Router struct {
