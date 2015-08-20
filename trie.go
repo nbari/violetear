@@ -1,14 +1,13 @@
 package violetear
 
 import (
-	"fmt"
 	"strings"
 )
 
 type Trie struct {
-	Node    map[string]*Trie
-	Handler map[string]string
-	Level   int
+	Node     map[string]*Trie
+	Handler  map[string]string
+	HasRegex bool
 }
 
 func NewTrie() *Trie {
@@ -18,7 +17,7 @@ func NewTrie() *Trie {
 	return t
 }
 
-func (t *Trie) Set(path []string, handler string, method string, level ...bool) {
+func (t *Trie) Set(path []string, handler string, method string) {
 	key := path[0]
 	newpath := path[1:]
 
@@ -28,9 +27,9 @@ func (t *Trie) Set(path []string, handler string, method string, level ...bool) 
 		val = NewTrie()
 		t.Node[key] = val
 
-		// increment level
-		if len(level) > 0 {
-			val.Level = t.Level + 1
+		// check for regex ":"
+		if strings.HasPrefix(key, ":") {
+			t.HasRegex = true
 		}
 	}
 
@@ -42,24 +41,18 @@ func (t *Trie) Set(path []string, handler string, method string, level ...bool) 
 		return
 	}
 
-	// recursive call with 4 argument set to true so that level can be
-	// increased by 1 if newpath > than 1
-	val.Set(newpath, handler, method, true)
+	val.Set(newpath, handler, method)
 }
 
-func (t *Trie) Get(path []string) *Trie {
-
+func (t *Trie) Get(path []string) (trie *Trie, leaf bool) {
 	key := path[0]
 	newpath := path[1:]
 
-	fmt.Println(key, newpath, t.Level)
-
 	if val, ok := t.Node[key]; ok {
 		if len(newpath) == 0 {
-			return val
+			return val, true
 		}
 		return val.Get(newpath)
 	}
-
-	return t
+	return t, false
 }
