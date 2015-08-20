@@ -5,32 +5,37 @@
 package violetear
 
 import (
-	"net/http"
+	"log"
+	_ "net/http"
 	"regexp"
+	"strings"
 )
 
 type Router struct {
-	// API versions
-	Versions []string
-
-	// Hosts (host, vroot)
-	Hosts map[string]string
-
-	//dynamic (vroot, hosts)
-	DynamicHosts map[string]regexp.Regexp
+	routes        *Trie
+	dynamicRoutes dynamicSet
 }
 
-func New(file string) Config {
-	var config Config
-	config = GetConfig(file)
-	return config
+func New() *Router {
+	log.Print("Starting...")
+
+	return &Router{
+		routes:        NewTrie(),
+		dynamicRoutes: NewDynamicSet(),
+	}
 }
 
-func Add(resource string, handler string, methods []string) Config {
-	var config Config
-	return config
-}
+func (r *Router) Add(path string, handler string, http_methods ...string) {
 
-func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	return
+	rx := regexp.MustCompile(`[^/ ]+`)
+	path_parts := rx.FindAllString(path, -1)
+
+	methods := "ALL"
+	if len(http_methods) > 0 {
+		methods = http_methods[0]
+	}
+
+	log.Printf("Adding path: %s Handler: %s Methods: %s", path_parts, handler, methods)
+	r.routes.Set(path_parts, handler, methods)
+
 }

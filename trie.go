@@ -36,7 +36,7 @@ func (t *Trie) Set(path []string, handler string, method string) {
 	if len(newpath) == 0 {
 		methods := strings.Split(method, ",")
 		for _, v := range methods {
-			val.Handler[strings.TrimSpace(v)] = handler
+			val.Handler[strings.ToUpper(strings.TrimSpace(v))] = handler
 		}
 		return
 	}

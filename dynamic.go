@@ -1,8 +1,7 @@
 package violetear
 
 import (
-	"fmt"
-	"os"
+	"log"
 	"regexp"
 	"strings"
 )
@@ -15,8 +14,7 @@ func NewDynamicSet() dynamicSet {
 
 func (d dynamicSet) Set(name string, regex string) error {
 	if !strings.HasPrefix(name, ":") {
-		fmt.Fprintf(os.Stderr, "Dynamic route name must start with a colon ':'\n")
-		os.Exit(1)
+		log.Fatal("Dynamic route name must start with a colon ':'")
 	}
 
 	r := regexp.MustCompile(regex)
