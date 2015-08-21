@@ -22,7 +22,7 @@ func New() *Router {
 	}
 }
 
-func (r *Router) Add(path string, handler string, http_methods ...string) {
+func (r *Router) AddPath(path string, handler string, http_methods ...string) {
 
 	// create slice from path
 	rx := regexp.MustCompile(`[^/ ]+`)
