@@ -1,6 +1,7 @@
 package violetear
 
 import (
+	"log"
 	"strings"
 )
 
@@ -11,13 +12,18 @@ type Trie struct {
 }
 
 func NewTrie() *Trie {
-	t := &Trie{}
-	t.Node = make(map[string]*Trie)
-	t.Handler = make(map[string]string)
-	return t
+	return &Trie{
+		Node:    make(map[string]*Trie),
+		Handler: make(map[string]string),
+	}
 }
 
 func (t *Trie) Set(path []string, handler string, method string) {
+
+	if len(path) == 0 {
+		log.Fatal("path cannot be empty")
+	}
+
 	key := path[0]
 	newpath := path[1:]
 
@@ -45,6 +51,10 @@ func (t *Trie) Set(path []string, handler string, method string) {
 }
 
 func (t *Trie) Get(path []string) (trie *Trie, leaf bool) {
+	if len(path) == 0 {
+		log.Fatal("path cannot be empty")
+	}
+
 	key := path[0]
 	newpath := path[1:]
 
