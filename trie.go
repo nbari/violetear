@@ -2,23 +2,24 @@ package violetear
 
 import (
 	"log"
+	"net/http"
 	"strings"
 )
 
 type Trie struct {
 	Node     map[string]*Trie
-	Handler  map[string]string
+	Handler  map[string]http.Handler
 	HasRegex bool
 }
 
 func NewTrie() *Trie {
 	return &Trie{
 		Node:    make(map[string]*Trie),
-		Handler: make(map[string]string),
+		Handler: make(map[string]http.Handler),
 	}
 }
 
-func (t *Trie) Set(path []string, handler string, method string) {
+func (t *Trie) Set(path []string, handler http.HandlerFunc, method string) {
 
 	if len(path) == 0 {
 		log.Fatal("path cannot be empty")
