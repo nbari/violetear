@@ -51,7 +51,7 @@ func (t *Trie) Set(path []string, handler http.HandlerFunc, method string) {
 	val.Set(newpath, handler, method)
 }
 
-func (t *Trie) Get(path []string) (trie *Trie, leaf bool) {
+func (t *Trie) Get(path []string) (trie *Trie, p []string, leaf bool) {
 	if len(path) == 0 {
 		log.Fatal("path cannot be empty")
 	}
@@ -61,9 +61,9 @@ func (t *Trie) Get(path []string) (trie *Trie, leaf bool) {
 
 	if val, ok := t.Node[key]; ok {
 		if len(newpath) == 0 {
-			return val, true
+			return val, path, true
 		}
 		return val.Get(newpath)
 	}
-	return t, false
+	return t, path, false
 }

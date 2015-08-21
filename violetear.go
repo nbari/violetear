@@ -83,30 +83,69 @@ func (v *Violetear) Match(req *http.Request) bool {
 
 // func (r *Violetear) HandlerFunc(path string, handler http.HandlerFunc) {}
 
+func (v *Violetear) abc(route *Trie, path []string, leaf bool) http.Handler {
+	log.Print(route, path, leaf)
+	if len(route.Handler) > 0 && leaf {
+		return route.Handler["ALL"]
+	} else if route.HasRegex {
+		for k, _ := range route.Node {
+			if strings.HasPrefix(k, ":") {
+				rx := v.dynamicRoutes[k]
+				if rx.MatchString(path[0]) {
+					log.Print(path, "-------<<<<")
+					path[0] = k
+					if leaf {
+						v.abc(route, path, leaf)
+					} else {
+						return route.Node[k].Handler["ALL"]
+					}
+				}
+			}
+			return route.Handler["ALL"]
+		}
+	} else {
+		return nil
+	}
+	return route.Handler["ALL"]
+
+}
+
 // ServerHTTP dispatches the handler registered in the matched path
 func (v *Violetear) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	if v.logRequests {
-		log.Println(req.Method, req.RequestURI)
+		log.Println(req.Method, req.RequestURI, req.URL, req.URL.Path)
 	}
 
 	split_request := v.splitPath(req.RequestURI)
 
-	r, l := v.routes.Get(split_request)
+	route, path, leaf := v.routes.Get(split_request)
 
 	var handler http.Handler
 
-	if len(r.Handler) > 0 && l {
-		handler = r.Handler["ALL"]
-	} else if r.HasRegex {
-		for k, _ := range r.Node {
-			if strings.HasPrefix(k, ":") {
-				handler.ServeHTTP(res, req)
-			}
-		}
-	} else {
-		log.Print("Not found")
-	}
+	handler = v.abc(route, path, leaf)
 	handler.ServeHTTP(res, req)
+
+	/*
+		if len(route.Handler) > 0 && leaf {
+			handler = route.Handler["ALL"]
+		} else if route.HasRegex {
+			for k, _ := range route.Node {
+				if strings.HasPrefix(k, ":") {
+					rx := v.dynamicRoutes[k]
+					if rx.MatchString(path[0]) {
+						log.Print(path, "-------<<<<-")
+					}
+					handler.ServeHTTP(res, req)
+				}
+			}
+			handler = nil
+		} else {
+			log.Print("Not found")
+			handler = nil
+		}
+	*/
+
+	//handler.ServeHTTP(res, req)
 
 }
 
