@@ -55,7 +55,7 @@ func (v *Violetear) Run(addr string) {
 }
 
 // HandleFunc add a route to the router (path, HandlerFunc, methods)
-func (v *Violetear) HandleFunc(path string, handler func(http.ResponseWriter, *http.Request), http_methods ...string) {
+func (v *Violetear) HandleFunc(path string, handler http.HandlerFunc, http_methods ...string) {
 	path_parts := v.splitPath(path)
 
 	// search for dynamic routes
