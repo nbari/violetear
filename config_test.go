@@ -1,3 +1,7 @@
+// Test
+//
+// go test config.go config_test.go
+
 package violetear
 
 import (

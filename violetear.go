@@ -12,18 +12,19 @@ type Violetear struct {
 	// Routes to be matched
 	routes *Trie
 
-	// map of dynamic routes and regular expresions
+	// dynamicRoutes map of dynamic routes and regular expresions
 	dynamicRoutes dynamicSet
 
-	// log requests
+	// logRequests yes or no
 	logRequests bool
 
-	// Configurable http.Handler which is called when no matching route is
-	// found. If it is not set, http.NotFound is used.
+	// NotFound configurable http.Handler which is called when no matching
+	// route is found. If it is not set, http.NotFound is used.
 	NotFound http.Handler
 
-	// Configurable http.Handler which is called when method not allowed
-	MethodNotAllowed http.Handler
+	// NotAllowed configurable http.Handler which is called when method not
+	// allowed.
+	NotAllowed http.Handler
 
 	// Function to handle panics recovered from http handlers.
 	PanicHandler func(http.ResponseWriter, *http.Request)
@@ -53,7 +54,8 @@ func (v *Violetear) Run(addr string) {
 	log.Fatal(http.ListenAndServe(addr, v))
 }
 
-func (v *Violetear) AddPath(path string, handler http.HandlerFunc, http_methods ...string) {
+// HandleFunc add a route to the router (path, HandlerFunc, methods)
+func (v *Violetear) HandleFunc(path string, handler func(http.ResponseWriter, *http.Request), http_methods ...string) {
 	path_parts := v.splitPath(path)
 
 	// search for dynamic routes
@@ -80,41 +82,24 @@ func (v *Violetear) AddRegex(name string, regex string) error {
 	return v.dynamicRoutes.Set(name, regex)
 }
 
-// func (r *Violetear) Handler(path string, handler http.Handler) {}
+// SetNotFound set the handler for 404
+func (v *Violetear) SetNotFound(h http.HandlerFunc) {
+	v.NotFound = http.HandlerFunc(h)
+}
 
-// func (r *Violetear) HandlerFunc(path string, handler http.HandlerFunc) {}
+// SetNotAllowed set the handler for 405
+func (v *Violetear) SetNotAllowed(h http.HandlerFunc) {
+	v.NotAllowed = http.HandlerFunc(h)
+}
 
-// Match matches registered paths against the request.
-func (v *Violetear) Match(node *Trie, path []string, leaf bool) map[string]http.Handler {
-
-	log.Print(node, path, leaf)
-
-	if len(node.Handler) > 0 && leaf {
-		log.Print("Matched -------- primer round")
-		return node.Handler
-	} else if node.HasRegex {
-		for k, _ := range node.Node {
-			if strings.HasPrefix(k, ":") {
-				rx := v.dynamicRoutes[k]
-				log.Print(path, "trying to find a match -------<<<<")
-				if rx.MatchString(path[0]) {
-					log.Print(path, "matched -------<<<<")
-					path[0] = k
-					if leaf {
-						v.Match(node, path, leaf)
-					} else {
-						log.Print("matched regex no leaf, returnint")
-						return node.Node[k].Handler
-					}
-				}
-			}
-		}
-		log.Print("Not found ---------------------")
-		return nil
-	} else {
-		log.Print("Not match ---------------------")
-		return nil
-	}
+// MethodNotAllowed default handler for 405
+func (v *Violetear) MethodNotAllowed() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w,
+			http.StatusText(http.StatusMethodNotAllowed),
+			http.StatusMethodNotAllowed,
+		)
+	})
 }
 
 // ServerHTTP dispatches the handler registered in the matched path
@@ -123,38 +108,54 @@ func (v *Violetear) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		log.Println(req.Method, req.RequestURI)
 	}
 
-	split_request := v.splitPath(req.RequestURI)
+	node, path, leaf := v.routes.Get(v.splitPath(req.RequestURI))
 
-	node, path, leaf := v.routes.Get(split_request)
+	// checkMethod check if method is allowed or not
+	checkMethod := func(node *Trie, method string) http.Handler {
+		if h, ok := node.Handler[method]; ok {
+			return h
+		} else if h, ok := node.Handler["ALL"]; ok {
+			return h
+		}
+		if v.NotAllowed != nil {
+			return v.NotAllowed
+		} else {
+			return v.MethodNotAllowed()
+		}
+	}
 
-	var handler http.Handler
+	var match func(node *Trie, path []string, leaf bool) http.Handler
 
-	handlers := v.Match(node, path, leaf)
-	handler = handlers["ALL"]
-	handler.ServeHTTP(res, req)
-
-	/*
-		if len(route.Handler) > 0 && leaf {
-			handler = route.Handler["ALL"]
-		} else if route.HasRegex {
-			for k, _ := range route.Node {
+	// match find a handler for the request
+	match = func(node *Trie, path []string, leaf bool) http.Handler {
+		if len(node.Handler) > 0 && leaf {
+			return checkMethod(node, req.Method)
+		} else if node.HasRegex {
+			for k, _ := range node.Node {
 				if strings.HasPrefix(k, ":") {
 					rx := v.dynamicRoutes[k]
 					if rx.MatchString(path[0]) {
-						log.Print(path, "-------<<<<-")
+						path[0] = k
+						if leaf {
+							match(node, path, leaf)
+						} else {
+							return checkMethod(node.Node[k], req.Method)
+						}
 					}
-					handler.ServeHTTP(res, req)
 				}
 			}
-			handler = nil
-		} else {
-			log.Print("Not found")
-			handler = nil
 		}
-	*/
+		if v.NotFound != nil {
+			return v.NotFound
+		}
+		return http.NotFoundHandler()
+	}
 
-	//handler.ServeHTTP(res, req)
-
+	//var handler http.Handler
+	h := match(node, path, leaf)
+	log.Printf("%T", h)
+	res.Header().Set("X-app-epazote", "1.0")
+	h.ServeHTTP(res, req)
 }
 
 // splitPath returns an slice of the path
