@@ -18,9 +18,15 @@ type Violetear struct {
 	// log requests
 	logRequests bool
 
-	// to check
-	PanicHandler    func(http.ResponseWriter, *http.Request, interface{})
-	NotFoundHandler http.Handler
+	// Configurable http.Handler which is called when no matching route is
+	// found. If it is not set, http.NotFound is used.
+	NotFound http.Handler
+
+	// Configurable http.Handler which is called when method not allowed
+	MethodNotAllowed http.Handler
+
+	// Function to handle panics recovered from http handlers.
+	PanicHandler func(http.ResponseWriter, *http.Request)
 }
 
 var (
@@ -65,7 +71,7 @@ func (v *Violetear) AddPath(path string, handler http.HandlerFunc, http_methods 
 		methods = http_methods[0]
 	}
 
-	log.Printf("Adding path: %s, Handler: %s, Methods: %s", path, handler, methods)
+	log.Printf("Adding path: %s, Handler: %T, Methods: %s", path, handler, methods)
 	v.routes.Set(path_parts, handler, methods)
 }
 
@@ -74,55 +80,57 @@ func (v *Violetear) AddRegex(name string, regex string) error {
 	return v.dynamicRoutes.Set(name, regex)
 }
 
-// Match matches registered paths against the request.
-func (v *Violetear) Match(req *http.Request) bool {
-	return false
-}
-
 // func (r *Violetear) Handler(path string, handler http.Handler) {}
 
 // func (r *Violetear) HandlerFunc(path string, handler http.HandlerFunc) {}
 
-func (v *Violetear) abc(route *Trie, path []string, leaf bool) http.Handler {
-	log.Print(route, path, leaf)
-	if len(route.Handler) > 0 && leaf {
-		return route.Handler["ALL"]
-	} else if route.HasRegex {
-		for k, _ := range route.Node {
+// Match matches registered paths against the request.
+func (v *Violetear) Match(node *Trie, path []string, leaf bool) map[string]http.Handler {
+
+	log.Print(node, path, leaf)
+
+	if len(node.Handler) > 0 && leaf {
+		log.Print("Matched -------- primer round")
+		return node.Handler
+	} else if node.HasRegex {
+		for k, _ := range node.Node {
 			if strings.HasPrefix(k, ":") {
 				rx := v.dynamicRoutes[k]
+				log.Print(path, "trying to find a match -------<<<<")
 				if rx.MatchString(path[0]) {
-					log.Print(path, "-------<<<<")
+					log.Print(path, "matched -------<<<<")
 					path[0] = k
 					if leaf {
-						v.abc(route, path, leaf)
+						v.Match(node, path, leaf)
 					} else {
-						return route.Node[k].Handler["ALL"]
+						log.Print("matched regex no leaf, returnint")
+						return node.Node[k].Handler
 					}
 				}
 			}
-			return route.Handler["ALL"]
 		}
+		log.Print("Not found ---------------------")
+		return nil
 	} else {
+		log.Print("Not match ---------------------")
 		return nil
 	}
-	return route.Handler["ALL"]
-
 }
 
 // ServerHTTP dispatches the handler registered in the matched path
 func (v *Violetear) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	if v.logRequests {
-		log.Println(req.Method, req.RequestURI, req.URL, req.URL.Path)
+		log.Println(req.Method, req.RequestURI)
 	}
 
 	split_request := v.splitPath(req.RequestURI)
 
-	route, path, leaf := v.routes.Get(split_request)
+	node, path, leaf := v.routes.Get(split_request)
 
 	var handler http.Handler
 
-	handler = v.abc(route, path, leaf)
+	handlers := v.Match(node, path, leaf)
+	handler = handlers["ALL"]
 	handler.ServeHTTP(res, req)
 
 	/*
