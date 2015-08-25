@@ -29,9 +29,7 @@ type Violetear struct {
 	PanicHandler func(http.ResponseWriter, *http.Request)
 }
 
-var (
-	split_path_rx = regexp.MustCompile(`[^/ ]+`)
-)
+var split_path_rx = regexp.MustCompile(`[^/ ]+`)
 
 // New returns a new initialized router.
 func New(log ...bool) *Violetear {
@@ -145,6 +143,7 @@ func (v *Violetear) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	log.Printf("%T", h)
 	res.Header().Set("X-app-epazote", "1.0")
 	h.ServeHTTP(res, req)
+	return
 }
 
 // splitPath returns an slice of the path
