@@ -18,13 +18,12 @@ type Violetear struct {
 	// logRequests yes or no
 	logRequests bool
 
-	// NotFound configurable http.Handler which is called when no matching
+	// NotFoundHandler configurable http.Handler which is called when no matching
 	// route is found. If it is not set, http.NotFound is used.
-	NotFound http.Handler
+	NotFoundHandler http.Handler
 
-	// NotAllowed configurable http.Handler which is called when method not
-	// allowed.
-	NotAllowed http.Handler
+	// NotAllowedHandler configurable http.Handler which is called when method not allowed.
+	NotAllowedHandler http.Handler
 
 	// Function to handle panics recovered from http handlers.
 	PanicHandler func(http.ResponseWriter, *http.Request)
@@ -82,16 +81,6 @@ func (v *Violetear) AddRegex(name string, regex string) error {
 	return v.dynamicRoutes.Set(name, regex)
 }
 
-// SetNotFound set the handler for 404
-func (v *Violetear) SetNotFound(h http.HandlerFunc) {
-	v.NotFound = http.HandlerFunc(h)
-}
-
-// SetNotAllowed set the handler for 405
-func (v *Violetear) SetNotAllowed(h http.HandlerFunc) {
-	v.NotAllowed = http.HandlerFunc(h)
-}
-
 // MethodNotAllowed default handler for 405
 func (v *Violetear) MethodNotAllowed() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -117,8 +106,8 @@ func (v *Violetear) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		} else if h, ok := node.Handler["ALL"]; ok {
 			return h
 		}
-		if v.NotAllowed != nil {
-			return v.NotAllowed
+		if v.NotAllowedHandler != nil {
+			return v.NotAllowedHandler
 		} else {
 			return v.MethodNotAllowed()
 		}
@@ -145,8 +134,8 @@ func (v *Violetear) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 				}
 			}
 		}
-		if v.NotFound != nil {
-			return v.NotFound
+		if v.NotFoundHandler != nil {
+			return v.NotFoundHandler
 		}
 		return http.NotFoundHandler()
 	}
