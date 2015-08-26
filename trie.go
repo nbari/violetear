@@ -7,11 +7,13 @@ import (
 )
 
 type Trie struct {
-	Node     map[string]*Trie
-	Handler  map[string]http.Handler
-	HasRegex bool
+	Node        map[string]*Trie
+	Handler     map[string]http.Handler
+	HasRegex    bool
+	HasCatchall bool
 }
 
+// NewTrie returns a new Trie
 func NewTrie() *Trie {
 	return &Trie{
 		Node:    make(map[string]*Trie),
@@ -19,6 +21,7 @@ func NewTrie() *Trie {
 	}
 }
 
+// Set adds a node (url part) to the Trie
 func (t *Trie) Set(path []string, handler http.HandlerFunc, method string) {
 
 	if len(path) == 0 {
@@ -38,6 +41,11 @@ func (t *Trie) Set(path []string, handler http.HandlerFunc, method string) {
 		if strings.HasPrefix(key, ":") {
 			t.HasRegex = true
 		}
+
+		// check for Catch-all "*"
+		if key == "*" {
+			t.HasCatchall = true
+		}
 	}
 
 	if len(newpath) == 0 {
@@ -48,9 +56,14 @@ func (t *Trie) Set(path []string, handler http.HandlerFunc, method string) {
 		return
 	}
 
+	if key == "*" {
+		log.Fatal("Catch-all \"*\" must always be the final path element.")
+	}
+
 	val.Set(newpath, handler, method)
 }
 
+// Get returns a node
 func (t *Trie) Get(path []string) (trie *Trie, p []string, leaf bool) {
 	if len(path) == 0 {
 		log.Fatal("path cannot be empty")
