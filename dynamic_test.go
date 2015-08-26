@@ -37,3 +37,12 @@ func TestRegex(t *testing.T) {
 		t.Error("set size != 2")
 	}
 }
+
+func TestFixRegex(t *testing.T) {
+	s := make(dynamicSet)
+	s.Set(":name", "az")
+	rx := s[":name"]
+	if rx.String() != "^az$" {
+		t.Error("regex bad fix")
+	}
+}
