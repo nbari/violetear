@@ -7,9 +7,10 @@ import (
 )
 
 type Trie struct {
-	Node     map[string]*Trie
-	Handler  map[string]http.Handler
-	HasRegex bool
+	Node        map[string]*Trie
+	Handler     map[string]http.Handler
+	HasRegex    bool
+	HasCatchall bool
 }
 
 func NewTrie() *Trie {
@@ -38,6 +39,11 @@ func (t *Trie) Set(path []string, handler http.HandlerFunc, method string) {
 		if strings.HasPrefix(key, ":") {
 			t.HasRegex = true
 		}
+
+		// check for Catch-all "*"
+		if key == "*" {
+			t.HasCatchall = true
+		}
 	}
 
 	if len(newpath) == 0 {
@@ -46,6 +52,10 @@ func (t *Trie) Set(path []string, handler http.HandlerFunc, method string) {
 			val.Handler[strings.ToUpper(strings.TrimSpace(v))] = handler
 		}
 		return
+	}
+
+	if key == "*" {
+		log.Fatal("Catch-all \"*\" must always be the final path element.")
 	}
 
 	val.Set(newpath, handler, method)

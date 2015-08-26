@@ -144,7 +144,13 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
+			if node.HasCatchall {
+				return checkMethod(node.Node["*"], r.Method)
+			}
+		} else if node.HasCatchall {
+			return checkMethod(node.Node["*"], r.Method)
 		}
+		// NotFound
 		if v.NotFoundHandler != nil {
 			return v.NotFoundHandler
 		}
