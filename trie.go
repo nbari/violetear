@@ -13,6 +13,7 @@ type Trie struct {
 	HasCatchall bool
 }
 
+// NewTrie returns a new Trie
 func NewTrie() *Trie {
 	return &Trie{
 		Node:    make(map[string]*Trie),
@@ -20,6 +21,7 @@ func NewTrie() *Trie {
 	}
 }
 
+// Set adds a node (url part) to the Trie
 func (t *Trie) Set(path []string, handler http.HandlerFunc, method string) {
 
 	if len(path) == 0 {
@@ -61,6 +63,7 @@ func (t *Trie) Set(path []string, handler http.HandlerFunc, method string) {
 	val.Set(newpath, handler, method)
 }
 
+// Get returns a node
 func (t *Trie) Get(path []string) (trie *Trie, p []string, leaf bool) {
 	if len(path) == 0 {
 		log.Fatal("path cannot be empty")
