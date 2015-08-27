@@ -2,7 +2,7 @@ package violetear
 
 import "net/http"
 
-// ResponseWritter wraps the standard http.ResponseWritter allowing for more
+// ResponseWriter wraps the standard http.ResponseWriter allowing for more
 // verbose logging
 type ResponseWriter struct {
 	http.ResponseWriter
