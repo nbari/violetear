@@ -1,6 +1,7 @@
 package violetear
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -22,10 +23,10 @@ func NewTrie() *Trie {
 }
 
 // Set adds a node (url part) to the Trie
-func (t *Trie) Set(path []string, handler http.HandlerFunc, method string) {
+func (t *Trie) Set(path []string, handler http.HandlerFunc, method string) error {
 
 	if len(path) == 0 {
-		log.Fatal("path cannot be empty")
+		return errors.New("path cannot be empty")
 	}
 
 	key := path[0]
@@ -53,14 +54,14 @@ func (t *Trie) Set(path []string, handler http.HandlerFunc, method string) {
 		for _, v := range methods {
 			val.Handler[strings.ToUpper(strings.TrimSpace(v))] = handler
 		}
-		return
+		return nil
 	}
 
 	if key == "*" {
-		log.Fatal("Catch-all \"*\" must always be the final path element.")
+		return errors.New("Catch-all \"*\" must always be the final path element.")
 	}
 
-	val.Set(newpath, handler, method)
+	return val.Set(newpath, handler, method)
 }
 
 // Get returns a node
