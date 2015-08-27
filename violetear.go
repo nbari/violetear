@@ -106,7 +106,7 @@ func (v *Router) MethodNotAllowed() http.HandlerFunc {
 func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	atomic.AddInt64(&v.count, 1)
-	lw := NewResponseWritter(w)
+	lw := NewResponseWriter(w)
 
 	node, path, leaf := v.routes.Get(v.splitPath(r.RequestURI))
 
