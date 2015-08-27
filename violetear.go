@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"reflect"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -65,7 +67,7 @@ func (v *Router) SetHeader(key, value string) {
 }
 
 // HandleFunc add a route to the router (path, HandlerFunc, methods)
-func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods ...string) {
+func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods ...string) error {
 	path_parts := v.splitPath(path)
 
 	// search for dynamic routes
@@ -83,8 +85,12 @@ func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods 
 		methods = http_methods[0]
 	}
 
-	log.Printf("Adding path: %s, Handler: %T, Methods: %s", path, handler, methods)
-	v.routes.Set(path_parts, handler, methods)
+	handler_name := strings.Split(runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(), ".")
+	log.Printf("Adding path: %s, Handler: %s, Methods: %s", path, strings.Join(handler_name[1:], "."), methods)
+	if err := v.routes.Set(path_parts, handler, methods); err != nil {
+		log.Fatal(err)
+	}
+	return nil
 }
 
 // AddRegex adds a ":named" regular expression to the dynamicRoutes
