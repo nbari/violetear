@@ -2,7 +2,6 @@ package violetear
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"strings"
 )
@@ -65,9 +64,10 @@ func (t *Trie) Set(path []string, handler http.HandlerFunc, method string) error
 }
 
 // Get returns a node
-func (t *Trie) Get(path []string) (trie *Trie, p []string, leaf bool) {
+func (t *Trie) Get(path []string) (trie *Trie, p []string, leaf bool, err error) {
 	if len(path) == 0 {
-		log.Fatal("path cannot be empty")
+		err = errors.New("path cannot be empty")
+		return
 	}
 
 	key := path[0]
@@ -75,9 +75,9 @@ func (t *Trie) Get(path []string) (trie *Trie, p []string, leaf bool) {
 
 	if val, ok := t.Node[key]; ok {
 		if len(newpath) == 0 {
-			return val, path, true
+			return val, path, true, nil
 		}
 		return val.Get(newpath)
 	}
-	return t, path, false
+	return t, path, false, nil
 }

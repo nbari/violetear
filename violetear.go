@@ -108,7 +108,11 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	atomic.AddInt64(&v.count, 1)
 	lw := NewResponseWriter(w)
 
-	node, path, leaf := v.routes.Get(v.splitPath(r.RequestURI))
+	node, path, leaf, err := v.routes.Get(v.splitPath(r.RequestURI))
+
+	if err != nil {
+		log.Fatal("sss")
+	}
 
 	// checkMethod check if method is allowed or not
 	checkMethod := func(node *Trie, method string) http.Handler {

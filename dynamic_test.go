@@ -33,16 +33,12 @@ func TestRegex(t *testing.T) {
 	if !rx.MatchString(uuid) {
 		t.Error("regex not matching")
 	}
-	if len(s) != 2 {
-		t.Error("set size != 2")
-	}
+	expect(t, len(s), 2)
 }
 
 func TestFixRegex(t *testing.T) {
 	s := make(dynamicSet)
 	s.Set(":name", "az")
 	rx := s[":name"]
-	if rx.String() != "^az$" {
-		t.Error("regex bad fix")
-	}
+	expect(t, rx.String(), "^az$")
 }
