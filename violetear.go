@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"reflect"
 	"regexp"
-	"runtime"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -85,8 +83,7 @@ func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods 
 		methods = http_methods[0]
 	}
 
-	handler_name := strings.Split(runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(), ".")
-	log.Printf("Adding path: %s, Handler: %s, Methods: %s", path, strings.Join(handler_name[1:], "."), methods)
+	log.Printf("Adding path: %s [%s]", path, methods)
 	if err := v.routes.Set(path_parts, handler, methods); err != nil {
 		log.Fatal(err)
 	}
@@ -114,7 +111,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	atomic.AddInt64(&v.count, 1)
 	lw := NewResponseWriter(w)
 
-	node, path, leaf, err := v.routes.Get(v.splitPath(r.RequestURI))
+	node, path, leaf, err := v.routes.Get(v.splitPath(r.URL.Path))
 
 	if err != nil {
 		log.Fatal("sss")
