@@ -23,6 +23,7 @@ func expectDeepEqual(t *testing.T, a interface{}, b interface{}) {
 
 func TestRouter(t *testing.T) {
 	router := New()
+	router.Verbose = false
 	router.SetHeader("X-app-epazote", "1.1")
 	router.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {})
 
