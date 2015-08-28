@@ -37,6 +37,9 @@ type Router struct {
 	// count counter for hits
 	count int64
 
+	// Verbose
+	Verbose bool
+
 	// Function to handle panics recovered from http handlers.
 	PanicHandler func(http.ResponseWriter, *http.Request)
 }
@@ -54,7 +57,10 @@ func New() *Router {
 
 // Run violetear as an HTTP server.
 // The addr string takes the same format as http.ListenAndServe.
-func (v *Router) Run(addr string) {
+func (v *Router) Run(addr string, verbose bool) {
+	if !verbose {
+		v.Verbose = true
+	}
 	log.Printf("Router listening on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, v))
 }
@@ -83,7 +89,9 @@ func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods 
 		methods = http_methods[0]
 	}
 
-	log.Printf("Adding path: %s [%s]", path, methods)
+	if v.Verbose {
+		log.Printf("Adding path: %s [%s]", path, methods)
+	}
 	if err := v.routes.Set(path_parts, handler, methods); err != nil {
 		log.Fatal(err)
 	}
