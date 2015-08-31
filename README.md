@@ -16,27 +16,29 @@ Usage
 
 For more details [GoDoc](https://godoc.org/github.com/nbari/violetear):
 
-    import (
-        "fmt"
-        "github.com/nbari/violetear"
-        "net/http"
-    )
+```go
+import (
+    "fmt"
+    "github.com/nbari/violetear"
+    "net/http"
+)
 
-    func helloWorld(w http.ResponseWriter, r *http.Request) {
-        fmt.Fprintf(w, r.URL.Path[1:])
-    }
+func helloWorld(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, r.URL.Path[1:])
+}
 
-    func main() {
-        router := violetear.New()
-	    router.LogRequests = true
+func main() {
+    router := violetear.New()
+    router.LogRequests = true
 
-    	router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
+	router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
 
-    	router.HandleFunc("/*", helloWorld)
-    	router.HandleFunc("/root/", helloWorld, "GET,HEAD")
-    	router.HandleFunc("/root/:uuid/item", helloWorld, "POST,PUT")
+	router.HandleFunc("/*", helloWorld)
+	router.HandleFunc("/root/", helloWorld, "GET,HEAD")
+	router.HandleFunc("/root/:uuid/item", helloWorld, "POST,PUT")
 
-	    router.SetHeader("X-app-version", "1.1")
+    router.SetHeader("X-app-version", "1.1")
 
-	    router.Run(":8080")
-    }
+    router.Run(":8080")
+}
+```
