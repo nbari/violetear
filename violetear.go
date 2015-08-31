@@ -37,6 +37,7 @@
 //
 //      router.Run(":8080")
 //  }
+//
 package violetear
 
 import (
@@ -77,9 +78,6 @@ type Router struct {
 
 	// Verbose
 	Verbose bool
-
-	// Function to handle panics recovered from http handlers.
-	PanicHandler func(http.ResponseWriter, *http.Request)
 }
 
 var split_path_rx = regexp.MustCompile(`[^/ ]+`)
@@ -227,10 +225,31 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	//h http.Handler
 	h := match(node, path, leaf)
+
+	// panicHandler
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("panic: %+v - %s [%s] %v %s",
+				err,
+				r.RemoteAddr,
+				r.URL,
+				time.Since(start),
+				rid)
+			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+		}
+	}()
+
+	// dispatch request
 	h.ServeHTTP(lw, r)
 
 	if v.LogRequests {
-		log.Printf("%s [%s] %d %d %v %s", r.RemoteAddr, r.URL, lw.Status(), lw.Size(), time.Since(start), rid)
+		log.Printf("%s [%s] %d %d %v %s",
+			r.RemoteAddr,
+			r.URL,
+			lw.Status(),
+			lw.Size(),
+			time.Since(start),
+			rid)
 	}
 	return
 }
