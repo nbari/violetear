@@ -1,4 +1,42 @@
 // HTTP router
+//
+// Basic example:
+// package main
+//
+// import (
+//	  "fmt"
+//	  "github.com/nbari/violetear"
+//	  "net/http"
+// )
+//
+// func catchAll(w http.ResponseWriter, r *http.Request) {
+//	   fmt.Fprintf(w, r.URL.Path[1:])
+// }
+//
+// func helloWorld(w http.ResponseWriter, r *http.Request) {
+//     fmt.Fprintf(w, r.URL.Path[1:])
+// }
+//
+// func handleUUID(w http.ResponseWriter, r *http.Request) {
+//     fmt.Fprintf(w, r.URL.Path[1:])
+// }
+//
+// func main() {
+//     router := violetear.New()
+//     router.LogRequests = true
+//     router.Request_ID = "REQUEST_LOG_ID"
+//
+//	   router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
+//
+//     router.HandleFunc("*", catchAll)
+//     router.HandleFunc("/hello/", helloWorld, "GET,HEAD")
+//     router.HandleFunc("/root/:uuid/item", handleUUID, "POST,PUT")
+//
+//     router.SetHeader("X-app-version", "1.1")
+//
+//     router.Run(":8080")
+// }
+
 package violetear
 
 import (
