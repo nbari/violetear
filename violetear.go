@@ -1,41 +1,42 @@
 // HTTP router
 //
 // Basic example:
-// package main
 //
-// import (
-//	  "fmt"
-//	  "github.com/nbari/violetear"
-//	  "net/http"
-// )
+//  package main
 //
-// func catchAll(w http.ResponseWriter, r *http.Request) {
-//	   fmt.Fprintf(w, r.URL.Path[1:])
-// }
+//  import (
+//     "fmt"
+//     "github.com/nbari/violetear"
+//     "net/http"
+//  )
 //
-// func helloWorld(w http.ResponseWriter, r *http.Request) {
-//     fmt.Fprintf(w, r.URL.Path[1:])
-// }
+//  func catchAll(w http.ResponseWriter, r *http.Request) {
+//      fmt.Fprintf(w, r.URL.Path[1:])
+//  }
 //
-// func handleUUID(w http.ResponseWriter, r *http.Request) {
-//     fmt.Fprintf(w, r.URL.Path[1:])
-// }
+//  func helloWorld(w http.ResponseWriter, r *http.Request) {
+//      fmt.Fprintf(w, r.URL.Path[1:])
+//  }
 //
-// func main() {
-//     router := violetear.New()
-//     router.LogRequests = true
-//     router.Request_ID = "REQUEST_LOG_ID"
+//  func handleUUID(w http.ResponseWriter, r *http.Request) {
+//      fmt.Fprintf(w, r.URL.Path[1:])
+//  }
 //
-//	   router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
+//  func main() {
+//      router := violetear.New()
+//      router.LogRequests = true
+//      router.Request_ID = "REQUEST_LOG_ID"
 //
-//     router.HandleFunc("*", catchAll)
-//     router.HandleFunc("/hello/", helloWorld, "GET,HEAD")
-//     router.HandleFunc("/root/:uuid/item", handleUUID, "POST,PUT")
+//      router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
 //
-//     router.SetHeader("X-app-version", "1.1")
+//      router.HandleFunc("*", catchAll)
+//      router.HandleFunc("/hello/", helloWorld, "GET,HEAD")
+//      router.HandleFunc("/root/:uuid/item", handleUUID, "POST,PUT")
 //
-//     router.Run(":8080")
-// }
+//      router.SetHeader("X-app-version", "1.1")
+//
+//      router.Run(":8080")
+//  }
 package violetear
 
 import (
