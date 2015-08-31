@@ -122,7 +122,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	node, path, leaf, err := v.routes.Get(v.splitPath(r.URL.Path))
 
 	if err != nil {
-		log.Fatal("sss")
+		log.Fatal(err)
 	}
 
 	// checkMethod check if method is allowed or not
@@ -152,9 +152,10 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					if rx.MatchString(path[0]) {
 						path[0] = k
 						if leaf {
-							match(node, path, leaf)
-						} else {
 							return checkMethod(node.Node[k], r.Method)
+						} else {
+							node, path, leaf, _ := node.Get(path)
+							return match(node, path, leaf)
 						}
 					}
 				}
