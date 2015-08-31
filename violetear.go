@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"reflect"
 	"regexp"
-	"runtime"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -39,6 +37,9 @@ type Router struct {
 	// count counter for hits
 	count int64
 
+	// Verbose
+	Verbose bool
+
 	// Function to handle panics recovered from http handlers.
 	PanicHandler func(http.ResponseWriter, *http.Request)
 }
@@ -51,13 +52,16 @@ func New() *Router {
 		routes:        NewTrie(),
 		dynamicRoutes: make(dynamicSet),
 		extraHeaders:  make(map[string]string),
+		Verbose:       true,
 	}
 }
 
 // Run violetear as an HTTP server.
 // The addr string takes the same format as http.ListenAndServe.
 func (v *Router) Run(addr string) {
-	log.Printf("Router listening on %s", addr)
+	if v.Verbose {
+		log.Printf("Router listening on %s", addr)
+	}
 	log.Fatal(http.ListenAndServe(addr, v))
 }
 
@@ -85,8 +89,9 @@ func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods 
 		methods = http_methods[0]
 	}
 
-	handler_name := strings.Split(runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name(), ".")
-	log.Printf("Adding path: %s, Handler: %s, Methods: %s", path, strings.Join(handler_name[1:], "."), methods)
+	if v.Verbose {
+		log.Printf("Adding path: %s [%s]", path, methods)
+	}
 	if err := v.routes.Set(path_parts, handler, methods); err != nil {
 		log.Fatal(err)
 	}
@@ -114,10 +119,10 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	atomic.AddInt64(&v.count, 1)
 	lw := NewResponseWriter(w)
 
-	node, path, leaf, err := v.routes.Get(v.splitPath(r.RequestURI))
+	node, path, leaf, err := v.routes.Get(v.splitPath(r.URL.Path))
 
 	if err != nil {
-		log.Fatal("sss")
+		log.Fatal(err)
 	}
 
 	// checkMethod check if method is allowed or not
@@ -147,9 +152,10 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					if rx.MatchString(path[0]) {
 						path[0] = k
 						if leaf {
-							match(node, path, leaf)
-						} else {
 							return checkMethod(node.Node[k], r.Method)
+						} else {
+							node, path, leaf, _ := node.Get(path)
+							return match(node, path, leaf)
 						}
 					}
 				}
