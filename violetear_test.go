@@ -1,7 +1,6 @@
 package violetear
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -157,7 +156,6 @@ func TestRouter(t *testing.T) {
 	expect(t, w.Code, http.StatusOK)
 	expect(t, len(w.HeaderMap), 2)
 	expectDeepEqual(t, w.HeaderMap["X-App-Epazote"], []string{"1.1"})
-	fmt.Println(w.Body)
 }
 
 func TestRoutes(t *testing.T) {
@@ -185,5 +183,20 @@ func TestRoutes(t *testing.T) {
 			}
 		}
 	}
+}
 
+func TestPanic(t *testing.T) {
+	router := New()
+	router.Verbose = false
+	router.SetHeader("X-app-epazote", "1.1")
+	router.HandleFunc("/panic", func(w http.ResponseWriter, r *http.Request) {
+		panic("si si si")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/panic", nil)
+
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, http.StatusInternalServerError)
+	expectDeepEqual(t, w.HeaderMap["X-App-Epazote"], []string{"1.1"})
 }
