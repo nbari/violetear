@@ -16,6 +16,7 @@ Usage
 
 For more details [GoDoc](https://godoc.org/github.com/nbari/violetear):
 
+```go
     import (
         "fmt"
         "github.com/nbari/violetear"
@@ -40,3 +41,4 @@ For more details [GoDoc](https://godoc.org/github.com/nbari/violetear):
 
 	    router.Run(":8080")
     }
+```
