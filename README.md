@@ -19,6 +19,8 @@ Usage
 For more details [GoDoc](https://godoc.org/github.com/nbari/violetear):
 
 ```go
+package main
+
 import (
     "fmt"
     "github.com/nbari/violetear"
