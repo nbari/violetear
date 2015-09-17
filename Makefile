@@ -1,9 +1,8 @@
-.PHONY: all test clean build install
+.PHONY: all test clean build
 
 GO ?= go
-GOPATH := $(CURDIR)/_vendor:$(GOPATH)
 
-all: install test
+all: build test
 
 build:
 	@go build
@@ -11,8 +10,5 @@ build:
 clean:
 	@go clean
 
-install:
-	@go get
-
-test: install
+test: build
 	@go test -v
