@@ -1,20 +1,18 @@
 .PHONY: all test clean build install
 
-GOFLAGS ?= $(GOFLAGS:)
+GO ?= go
+GOPATH := $(CURDIR)/_vendor:$(GOPATH)
 
 all: install test
 
 build:
-	@go build $(GOFLAGS) ./...
+	@go build
 
 clean:
-	@go clean $(GOFLAGS) -i ./...
+	@go clean
 
 install:
-	@go get $(GOFLAGS) ./...
+	@go get
 
 test: install
-	@go test $(GOFLAGS) ./...
-
-bench: install
-	@go test -run=NONE -bench=. $(GOFLAGS) ./...
+	@go test -v
