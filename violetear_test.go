@@ -280,8 +280,7 @@ func TestRequestId(t *testing.T) {
 	expect(t, err, nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
-	req.Header.Set("REQUEST_LOG_ID", "GET-1442587008290786703-1")
+	req.Header["REQUEST_LOG_ID"] = []string{"GET-1442587008290786703-1"}
 	router.ServeHTTP(w, req)
-	log.Print(w.HeaderMap)
 	expect(t, w.HeaderMap["REQUEST_LOG_ID"][0], "GET-1442587008290786703-1")
 }
