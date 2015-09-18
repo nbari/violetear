@@ -44,6 +44,7 @@ func main() {
     router.SetHeader("X-app-version", "1.1")
 
     router.Run(":8080")
+    http.ListenAndServe(":8080", router)
 }
 ```
 
