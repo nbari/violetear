@@ -35,7 +35,7 @@
 //
 //      router.SetHeader("X-app-version", "1.1")
 //
-//      router.Run(":8080")
+//		http.ListenAndServe(":8080", router)
 //  }
 //
 package violetear
@@ -92,15 +92,6 @@ func New() *Router {
 	}
 }
 
-// Run violetear as an HTTP server.
-// The addr string takes the same format as http.ListenAndServe.
-func (v *Router) Run(addr string) {
-	if v.Verbose {
-		log.Printf("Router listening on %s", addr)
-	}
-	log.Fatal(http.ListenAndServe(addr, v))
-}
-
 // SetHeader adds extra headers to the response
 func (v *Router) SetHeader(key, value string) {
 	v.extraHeaders[key] = value
@@ -114,7 +105,7 @@ func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods 
 	for _, p := range path_parts {
 		if strings.HasPrefix(p, ":") {
 			if _, ok := v.dynamicRoutes[p]; !ok {
-				log.Fatalf("[%s] not found, need to add it using AddRegex(\"%s\", `your regex`)", p, p)
+				return fmt.Errorf("[%s] not found, need to add it using AddRegex(\"%s\", `your regex`)", p, p)
 			}
 		}
 	}
@@ -129,7 +120,7 @@ func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods 
 		log.Printf("Adding path: %s [%s]", path, methods)
 	}
 	if err := v.routes.Set(path_parts, handler, methods); err != nil {
-		log.Fatal(err)
+		return err
 	}
 	return nil
 }

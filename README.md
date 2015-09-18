@@ -46,3 +46,14 @@ func main() {
     router.Run(":8080")
 }
 ```
+
+
+Canonicalized headers issues
+----------------------------
+
+Go version < 1.5 will canonicalize the header (from uppercase to lowercase),
+example:
+
+https://travis-ci.org/nbari/violetear/jobs/81059152#L156 golang 1.4
+
+https://travis-ci.org/nbari/violetear/jobs/81059153#L156 golang 1.5
