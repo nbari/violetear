@@ -114,7 +114,7 @@ func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods 
 	for _, p := range path_parts {
 		if strings.HasPrefix(p, ":") {
 			if _, ok := v.dynamicRoutes[p]; !ok {
-				log.Fatalf("[%s] not found, need to add it using AddRegex(\"%s\", `your regex`)", p, p)
+				return fmt.Errorf("[%s] not found, need to add it using AddRegex(\"%s\", `your regex`)", p, p)
 			}
 		}
 	}
@@ -129,7 +129,7 @@ func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods 
 		log.Printf("Adding path: %s [%s]", path, methods)
 	}
 	if err := v.routes.Set(path_parts, handler, methods); err != nil {
-		log.Fatal(err)
+		return err
 	}
 	return nil
 }

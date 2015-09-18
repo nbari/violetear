@@ -141,6 +141,27 @@ var routes = []testRouter{
 		{"/violetear/127.0.0.1/A22314BF-4A90-46C8-948D-5507379BD0DD/", "GET", 200},
 		{"/violetear/127.0.0.1/A22314BF-4A90-46C8-948D-5507379BD0DD/not-found", "GET", 404},
 	}},
+	{"/:ip", "GET", []testRequests{
+		{"/127.0.0.1", "GET", 200},
+	}},
+}
+
+func myMethodNotAllowed() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w,
+			http.StatusText(http.StatusMethodNotAllowed),
+			http.StatusMethodNotAllowed,
+		)
+	})
+}
+
+func myMethodNotFound() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w,
+			http.StatusText(http.StatusNotFound),
+			http.StatusNotFound,
+		)
+	})
 }
 
 func TestRouter(t *testing.T) {
@@ -199,4 +220,67 @@ func TestPanic(t *testing.T) {
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, http.StatusInternalServerError)
 	expectDeepEqual(t, w.HeaderMap["X-App-Epazote"], []string{"1.1"})
+}
+
+func TestHandleFunc(t *testing.T) {
+	router := New()
+	router.Verbose = false
+	err := router.HandleFunc("/:none", func(w http.ResponseWriter, r *http.Request) {})
+	if err == nil {
+		t.Error(err)
+	}
+	err = router.HandleFunc("/*/test", func(w http.ResponseWriter, r *http.Request) {})
+	if err == nil {
+		t.Error(err)
+	}
+	router.Verbose = true
+	router.HandleFunc("/verbose", func(w http.ResponseWriter, r *http.Request) {})
+}
+
+func TestNotAllowedHandler(t *testing.T) {
+	router := New()
+	router.Verbose = false
+	router.NotAllowedHandler = myMethodNotAllowed()
+	router.HandleFunc("/logrequest", func(w http.ResponseWriter, r *http.Request) {}, "GET")
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/logrequest", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 405)
+}
+
+func TestNotFoundHandler(t *testing.T) {
+	router := New()
+	router.Verbose = false
+	router.NotFoundHandler = myMethodNotFound()
+	router.HandleFunc("/404", func(w http.ResponseWriter, r *http.Request) {})
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 404)
+}
+
+func TestLogRequests(t *testing.T) {
+	router := New()
+	router.Verbose = false
+	router.LogRequests = true
+	err := router.HandleFunc("/logrequest", func(w http.ResponseWriter, r *http.Request) {})
+	expect(t, err, nil)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/logrequest", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+}
+
+func TestRequestId(t *testing.T) {
+	router := New()
+	router.Verbose = false
+	router.LogRequests = true
+	router.Request_ID = "REQUEST_LOG_ID"
+	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	expect(t, err, nil)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("REQUEST_LOG_ID", "GET-1442587008290786703-1")
+	router.ServeHTTP(w, req)
+	expectDeepEqual(t, w.HeaderMap["REQUEST_LOG_ID"], []string{"GET-1442587008290786703-1"})
 }
