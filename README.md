@@ -3,6 +3,7 @@
 [![Circle CI](https://circleci.com/gh/nbari/violetear.svg?style=svg)](https://circleci.com/gh/nbari/violetear)
 [![Build Status](https://travis-ci.org/nbari/violetear.svg?branch=master)](https://travis-ci.org/nbari/violetear)
 [![Coverage](http://gocover.io/_badge/github.com/nbari/violetear?0)](http://gocover.io/github.com/nbari/violetear)
+[![Coverage Status](https://coveralls.io/repos/nbari/violetear/badge.svg?branch=develop&service=github)](https://coveralls.io/github/nbari/violetear?branch=develop)
 
 # violetear
 Go HTTP router
