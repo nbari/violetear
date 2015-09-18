@@ -275,12 +275,12 @@ func TestRequestId(t *testing.T) {
 	router := New()
 	router.Verbose = false
 	router.LogRequests = true
-	router.Request_ID = "REQUEST_LOG_ID"
+	router.Request_ID = "request_log_id"
 	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 	expect(t, err, nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
-	req.Header["REQUEST_LOG_ID"] = []string{"GET-1442587008290786703-1"}
+	req.Header["request_log_id"] = []string{"GET-1442587008290786703-1"}
 	router.ServeHTTP(w, req)
-	expect(t, w.HeaderMap["REQUEST_LOG_ID"][0], "GET-1442587008290786703-1")
+	expect(t, w.HeaderMap["request_log_id"][0], "GET-1442587008290786703-1")
 }
