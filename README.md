@@ -51,6 +51,7 @@ func main() {
 Canonicalized headers issues
 
 https://travis-ci.org/nbari/violetear/jobs/81059152#L156 golang 1.4
+
 https://travis-ci.org/nbari/violetear/jobs/81059153#L156 golang 1.5
 
 version 1.5.1 of go seems no to change the headers
