@@ -7,6 +7,7 @@
 //  import (
 //     "fmt"
 //     "github.com/nbari/violetear"
+//     "log"
 //     "net/http"
 //  )
 //
@@ -35,7 +36,7 @@
 //
 //      router.SetHeader("X-app-version", "1.1")
 //
-//      http.ListenAndServe(":8080", router)
+//      log.Fatal(http.ListenAndServe(":8080", router))
 //  }
 //
 package violetear
