@@ -35,7 +35,7 @@
 //
 //      router.SetHeader("X-app-version", "1.1")
 //
-//      router.Run(":8080")
+//		http.ListenAndServe(":8080", router)
 //  }
 //
 package violetear
@@ -90,15 +90,6 @@ func New() *Router {
 		extraHeaders:  make(map[string]string),
 		Verbose:       true,
 	}
-}
-
-// Run violetear as an HTTP server.
-// The addr string takes the same format as http.ListenAndServe.
-func (v *Router) Run(addr string) {
-	if v.Verbose {
-		log.Printf("Router listening on %s", addr)
-	}
-	log.Fatal(http.ListenAndServe(addr, v))
 }
 
 // SetHeader adds extra headers to the response
