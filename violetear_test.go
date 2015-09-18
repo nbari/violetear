@@ -241,9 +241,9 @@ func TestNotAllowedHandler(t *testing.T) {
 	router := New()
 	router.Verbose = false
 	router.NotAllowedHandler = myMethodNotAllowed()
-	router.HandleFunc("/logrequest", func(w http.ResponseWriter, r *http.Request) {}, "GET")
+	router.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {}, "GET")
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/logrequest", nil)
+	req, _ := http.NewRequest("POST", "/get", nil)
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 405)
 }
