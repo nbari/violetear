@@ -143,6 +143,7 @@ var routes = []testRouter{
 	}},
 	{"/:ip", "GET", []testRequests{
 		{"/127.0.0.1", "GET", 200},
+		{"/:ip", "GET", 200},
 	}},
 }
 
@@ -266,7 +267,7 @@ func TestLogRequests(t *testing.T) {
 	err := router.HandleFunc("/logrequest", func(w http.ResponseWriter, r *http.Request) {})
 	expect(t, err, nil)
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/logrequest", nil)
+	req, _ := http.NewRequest("PUT", "/logrequest", nil)
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
 }
@@ -282,5 +283,6 @@ func TestRequestId(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/", nil)
 	req.Header.Set("Request_log_id", "GET-1442587008290786703-1")
 	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
 	expect(t, w.HeaderMap["Request_log_id"][0], "GET-1442587008290786703-1")
 }
