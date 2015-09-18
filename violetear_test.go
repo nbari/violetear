@@ -143,6 +143,7 @@ var routes = []testRouter{
 	}},
 	{"/:ip", "GET", []testRequests{
 		{"/127.0.0.1", "GET", 200},
+		{"/:ip", "GET", 200},
 	}},
 }
 

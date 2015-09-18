@@ -146,11 +146,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	atomic.AddInt64(&v.count, 1)
 	lw := NewResponseWriter(w)
 
-	node, path, leaf, err := v.routes.Get(v.splitPath(r.URL.Path))
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	node, path, leaf, _ := v.routes.Get(v.splitPath(r.URL.Path))
 
 	// checkMethod check if method is allowed or not
 	checkMethod := func(node *Trie, method string) http.Handler {
@@ -178,12 +174,8 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					rx := v.dynamicRoutes[k]
 					if rx.MatchString(path[0]) {
 						path[0] = k
-						if leaf {
-							return checkMethod(node.Node[k], r.Method)
-						} else {
-							node, path, leaf, _ := node.Get(path)
-							return match(node, path, leaf)
-						}
+						node, path, leaf, _ := node.Get(path)
+						return match(node, path, leaf)
 					}
 				}
 			}
