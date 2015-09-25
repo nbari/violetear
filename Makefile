@@ -12,5 +12,5 @@ test:
 
 cover:
 	${GO} test -cover && \
-	go test -coverprofile=coverage.out  && \
-	go tool cover -html=coverage.out
+	${GO} test -coverprofile=coverage.out  && \
+	${GO} tool cover -html=coverage.out
