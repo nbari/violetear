@@ -1,16 +1,16 @@
-.PHONY: all test clean build cover
+.PHONY: all test build cover
 
 GO ?= go
 
 all: build test
 
 build:
-	@go build
+	${GO} build
 
-test: build
-	@go test -v
+test:
+	${GO} test -v
 
 cover:
-	@go test -cover && \
+	${GO} test -cover && \
 	go test -coverprofile=coverage.out  && \
 	go tool cover -html=coverage.out
