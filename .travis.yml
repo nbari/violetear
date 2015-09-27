@@ -4,12 +4,15 @@ go:
   - 1.4.2
   - 1.5
   - tip
+
 before_install:
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
   - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
+
 script:
   - $HOME/gopath/bin/goveralls -service=travis-ci
   - go test -coverprofile=coverage.txt -covermode=atomic
+
 after_success:
   - bash <(curl -s https://codecov.io/bash)
