@@ -176,7 +176,7 @@ func TestRouter(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, http.StatusOK)
-	expect(t, len(w.HeaderMap), 2)
+	expect(t, len(w.HeaderMap), 3)
 	expectDeepEqual(t, w.HeaderMap["X-App-Epazote"], []string{"1.1"})
 }
 
