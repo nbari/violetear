@@ -79,6 +79,9 @@ type Router struct {
 
 	// Verbose
 	Verbose bool
+
+	// DefaultContentType
+	DefaultContentType string
 }
 
 var split_path_rx = regexp.MustCompile(`[^/ ]+`)
@@ -86,10 +89,11 @@ var split_path_rx = regexp.MustCompile(`[^/ ]+`)
 // New returns a new initialized router.
 func New() *Router {
 	return &Router{
-		routes:        NewTrie(),
-		dynamicRoutes: make(dynamicSet),
-		extraHeaders:  make(map[string]string),
-		Verbose:       true,
+		routes:             NewTrie(),
+		dynamicRoutes:      make(dynamicSet),
+		extraHeaders:       make(map[string]string),
+		Verbose:            true,
+		DefaultContentType: "application/json; charset=UTF-8",
 	}
 }
 
@@ -206,6 +210,9 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for k, v := range v.extraHeaders {
 		w.Header().Set(k, v)
 	}
+
+	// set Content-type
+	w.Header().Set("Content-Type", v.DefaultContentType)
 
 	//h http.Handler
 	h := match(node, path, leaf)
