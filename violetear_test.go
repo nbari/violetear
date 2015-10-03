@@ -178,6 +178,7 @@ func TestRouter(t *testing.T) {
 	expect(t, w.Code, http.StatusOK)
 	expect(t, len(w.HeaderMap), 3)
 	expectDeepEqual(t, w.HeaderMap["X-App-Epazote"], []string{"1.1"})
+	expectDeepEqual(t, w.HeaderMap["Content-Type"], []string{"application/json; charset=UTF-8"})
 }
 
 func TestRoutes(t *testing.T) {
