@@ -13,7 +13,9 @@ before_install:
   - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
 
 script:
-  - $HOME/gopath/bin/goveralls -service=travis-ci
+  - $HOME/gopath/bin/gover
+  - $HOME/gopath/bin/goveralls -coverprofile=gover.coverprofile -service travis-ci
+ # - $HOME/gopath/bin/goveralls -service=travis-ci
   - go test -coverprofile=coverage.txt -covermode=atomic
 
 after_success:
