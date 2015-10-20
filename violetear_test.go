@@ -173,7 +173,6 @@ func myPanicHandler() http.HandlerFunc {
 
 func TestRouter(t *testing.T) {
 	router := New()
-	router.SetHeader("X-app-epazote", "1.1")
 	router.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {})
 
 	w := httptest.NewRecorder()
@@ -181,8 +180,7 @@ func TestRouter(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, http.StatusOK)
-	expect(t, len(w.HeaderMap), 1)
-	expectDeepEqual(t, w.HeaderMap["X-App-Epazote"], []string{"1.1"})
+	expect(t, len(w.HeaderMap), 0)
 }
 
 func TestRoutes(t *testing.T) {
@@ -213,7 +211,6 @@ func TestRoutes(t *testing.T) {
 
 func TestPanic(t *testing.T) {
 	router := New()
-	router.SetHeader("X-app-epazote", "1.1")
 	router.HandleFunc("/panic", func(w http.ResponseWriter, r *http.Request) {
 		panic("si si si")
 	})
@@ -223,7 +220,6 @@ func TestPanic(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, http.StatusInternalServerError)
-	expectDeepEqual(t, w.HeaderMap["X-App-Epazote"], []string{"1.1"})
 }
 
 func TestPanicHandler(t *testing.T) {

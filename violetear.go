@@ -25,16 +25,12 @@
 //
 //  func main() {
 //      router := violetear.New()
-//      router.LogRequests = true
-//      router.Request_ID = "REQUEST_LOG_ID"
 //
 //      router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
 //
 //      router.HandleFunc("*", catchAll)
 //      router.HandleFunc("/hello/", helloWorld, "GET,HEAD")
 //      router.HandleFunc("/root/:uuid/item", handleUUID, "POST,PUT")
-//
-//      router.SetHeader("X-app-version", "1.1")
 //
 //      log.Fatal(http.ListenAndServe(":8080", router))
 //  }
@@ -63,11 +59,8 @@ type Router struct {
 	// NotAllowedHandler configurable http.Handler which is called when method not allowed.
 	NotAllowedHandler http.Handler
 
-	// PanicHandler function to handle panics recovered from http handlers.
+	// PanicHandler function to handle panics.
 	PanicHandler http.HandlerFunc
-
-	// extraHeaders adds exta headers to the response
-	extraHeaders map[string]string
 }
 
 var split_path_rx = regexp.MustCompile(`[^/ ]+`)
@@ -77,13 +70,7 @@ func New() *Router {
 	return &Router{
 		routes:        NewTrie(),
 		dynamicRoutes: make(dynamicSet),
-		extraHeaders:  make(map[string]string),
 	}
-}
-
-// SetHeader adds extra headers to the response
-func (v *Router) SetHeader(key, value string) {
-	v.extraHeaders[key] = value
 }
 
 // HandleFunc add a route to the router (path, HandlerFunc, methods)
@@ -187,11 +174,6 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return v.NotFoundHandler
 		}
 		return http.NotFoundHandler()
-	}
-
-	// set extra headers
-	for k, v := range v.extraHeaders {
-		w.Header().Set(k, v)
 	}
 
 	//h http.Handler
