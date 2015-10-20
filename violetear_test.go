@@ -289,7 +289,7 @@ func TestRequestId(t *testing.T) {
 
 func TestHandleFuncMethods(t *testing.T) {
 	router := New()
-	router.Verbose = true
+	router.Verbose = false
 
 	get_handler := func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("I handle GET"))
