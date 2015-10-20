@@ -286,3 +286,38 @@ func TestRequestId(t *testing.T) {
 	expect(t, w.Code, 200)
 	expect(t, w.HeaderMap["Request_log_id"][0], "GET-1442587008290786703-1")
 }
+
+func TestHandleFuncMethods(t *testing.T) {
+	router := New()
+	router.Verbose = true
+
+	get_handler := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("I handle GET"))
+	}
+	post_handler := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("I handle POST"))
+	}
+
+	router.HandleFunc("/spine", get_handler, "GET")
+	router.HandleFunc("/spine", post_handler, "POST")
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("PUT", "/spine", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 405)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/spine", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Body.String(), "I handle GET")
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/spine", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Body.String(), "I handle POST")
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("HEAD", "/spine", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 405)
+}
