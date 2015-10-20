@@ -47,8 +47,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"sync/atomic"
-	"time"
 )
 
 type Router struct {
@@ -58,9 +56,6 @@ type Router struct {
 	// dynamicRoutes map of dynamic routes and regular expresions
 	dynamicRoutes dynamicSet
 
-	// logRequests yes or no
-	LogRequests bool
-
 	// NotFoundHandler configurable http.Handler which is called when no matching
 	// route is found. If it is not set, http.NotFound is used.
 	NotFoundHandler http.Handler
@@ -68,17 +63,11 @@ type Router struct {
 	// NotAllowedHandler configurable http.Handler which is called when method not allowed.
 	NotAllowedHandler http.Handler
 
-	// request-id to use
-	Request_ID string
+	// PanicHandler function to handle panics recovered from http handlers.
+	PanicHandler http.HandlerFunc
 
 	// extraHeaders adds exta headers to the response
 	extraHeaders map[string]string
-
-	// count counter for hits
-	count int64
-
-	// Verbose
-	Verbose bool
 }
 
 var split_path_rx = regexp.MustCompile(`[^/ ]+`)
@@ -89,7 +78,6 @@ func New() *Router {
 		routes:        NewTrie(),
 		dynamicRoutes: make(dynamicSet),
 		extraHeaders:  make(map[string]string),
-		Verbose:       true,
 	}
 }
 
@@ -117,9 +105,8 @@ func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods 
 		methods = http_methods[0]
 	}
 
-	if v.Verbose {
-		log.Printf("Adding path: %s [%s]", path, methods)
-	}
+	log.Printf("Adding path: %s [%s]", path, methods)
+
 	if err := v.routes.Set(path_parts, handler, methods); err != nil {
 		return err
 	}
@@ -143,10 +130,19 @@ func (v *Router) MethodNotAllowed() http.HandlerFunc {
 
 // ServerHTTP dispatches the handler registered in the matched path
 func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
-	atomic.AddInt64(&v.count, 1)
-	lw := NewResponseWriter(w)
 
+	// panic handler
+	defer func() {
+		if err := recover(); err != nil {
+			if v.PanicHandler != nil {
+				v.PanicHandler(w, r)
+			} else {
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			}
+		}
+	}()
+
+	// _ path never empty, defaults to ("/")
 	node, path, leaf, _ := v.routes.Get(v.splitPath(r.URL.Path))
 
 	// checkMethod check if method is allowed or not
@@ -193,15 +189,6 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return http.NotFoundHandler()
 	}
 
-	// rid Set Request-ID
-	rid := r.Header.Get(v.Request_ID)
-	if rid != "" {
-		w.Header().Set(v.Request_ID, rid)
-	} else {
-		rid = fmt.Sprintf("%s-%d-%d", r.Method, time.Now().UnixNano(), atomic.LoadInt64(&v.count))
-		w.Header().Set("Request-ID", rid)
-	}
-
 	// set extra headers
 	for k, v := range v.extraHeaders {
 		w.Header().Set(k, v)
@@ -210,31 +197,8 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	//h http.Handler
 	h := match(node, path, leaf)
 
-	// panicHandler
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("panic: %+v - %s [%s] %v %s",
-				err,
-				r.RemoteAddr,
-				r.URL,
-				time.Since(start),
-				rid)
-			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
-		}
-	}()
-
 	// dispatch request
-	h.ServeHTTP(lw, r)
-
-	if v.LogRequests {
-		log.Printf("%s [%s] %d %d %v %s",
-			r.RemoteAddr,
-			r.URL,
-			lw.Status(),
-			lw.Size(),
-			time.Since(start),
-			rid)
-	}
+	h.ServeHTTP(w, r)
 	return
 }
 
