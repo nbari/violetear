@@ -73,8 +73,8 @@ func New() *Router {
 	}
 }
 
-// HandleFunc add a route to the router (path, HandlerFunc, methods)
-func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods ...string) error {
+// Handle registers the handler for the given pattern (path, http.Handler, methods).
+func (v *Router) Handle(path string, handler http.Handler, http_methods ...string) error {
 	path_parts := v.splitPath(path)
 
 	// search for dynamic routes
@@ -98,6 +98,14 @@ func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods 
 		return err
 	}
 	return nil
+}
+
+// HandleFunc add a route to the router (path, http.HandlerFunc, methods)
+func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods ...string) error {
+	if len(http_methods) > 0 {
+		return v.Handle(path, handler, http_methods[0])
+	}
+	return v.Handle(path, handler)
 }
 
 // AddRegex adds a ":named" regular expression to the dynamicRoutes
