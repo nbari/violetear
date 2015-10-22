@@ -69,10 +69,10 @@ type Router struct {
 	// PanicHandler function to handle panics.
 	PanicHandler http.HandlerFunc
 
-	// request-id to use
+	// Request_ID name of the header to use or create.
 	Request_ID string
 
-	// count counter for hits
+	// count counter for hits, used only if Request_ID is created.
 	count int64
 }
 
@@ -136,7 +136,6 @@ func (v *Router) MethodNotAllowed() http.HandlerFunc {
 // ServerHTTP dispatches the handler registered in the matched path
 func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
-	atomic.AddInt64(&v.count, 1)
 	lw := NewResponseWriter(w)
 
 	// panic handler
@@ -197,13 +196,15 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return http.NotFoundHandler()
 	}
 
-	// rid Set Request-ID
-	rid := r.Header.Get(v.Request_ID)
-	if rid != "" {
-		w.Header().Set(v.Request_ID, rid)
-	} else {
-		rid = fmt.Sprintf("%s-%d-%d", r.Method, time.Now().UnixNano(), atomic.LoadInt64(&v.count))
-		w.Header().Set("Request-ID", rid)
+	// Request-ID
+	if v.Request_ID != "" {
+		if rid := r.Header.Get(v.Request_ID); rid != "" {
+			lw.Header().Set(v.Request_ID, rid)
+		} else {
+			atomic.AddInt64(&v.count, 1)
+			rid = fmt.Sprintf("%s-%d-%d", r.Method, time.Now().UnixNano(), atomic.LoadInt64(&v.count))
+			lw.Header().Set(v.Request_ID, rid)
+		}
 	}
 
 	//h http.Handler
@@ -219,7 +220,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			lw.Status(),
 			lw.Size(),
 			time.Since(start),
-			rid)
+			lw.Header().Get(v.Request_ID))
 	}
 	return
 }

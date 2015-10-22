@@ -15,10 +15,31 @@ Go HTTP router
 * Easy middleware compatibility so that it satisfies the http.Handler interface.
 * Trace Request-ID per request.
 
+Package [GoDoc](https://godoc.org/github.com/nbari/violetear)
+
 Usage
 -----
 
-Package [GoDoc](https://godoc.org/github.com/nbari/violetear), basic example:
+HandleFunc:
+
+     func HandleFunc(path string, handler http.HandlerFunc, http_methods ...string)
+
+Handle (for middleware):
+
+     func Handle(path string, handler http.Handler, http_methods ...string)
+
+
+**http_methods** is a comma separted list of allowed HTTP methods, example:
+
+    router.HandleFunc("/view", handleView, "GET, HEAD")
+
+
+**AddRegex** adds a ":named" regular expression to the dynamicRoutes, example:
+
+    router.AddRegex(":ip", `^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$`)
+
+
+Basic example:
 
 ```go
 package main
@@ -48,6 +69,7 @@ func handleUUID(w http.ResponseWriter, r *http.Request) {
 func main() {
     router := violetear.New()
     router.LogRequests = true
+    router.Request_ID = "Request-ID"
 
     router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
 
@@ -141,6 +163,56 @@ X-Content-Type-Options: nosniff
 
 Method Not Allowed
 ```
+
+Request_ID
+-----------
+
+To keep track of the "requests" an existing "request ID" can be used, for
+example when using AppEngine the name of the header containing the request ID is
+**Request-ID** therefore to continue using it, the router needs to know the name
+of the header:
+
+    router := violetear.New()
+    router.Request_ID = "Request-ID"
+
+If the proxy is using another name, for example "RID" then use something like:
+
+    router := violetear.New()
+    router.Request_ID = "RID"
+
+If ``router.Request_ID`` is not set, no "request ID" is going to be added to the
+headers, if it is set but not headers found from the request headers, one will
+be created.
+
+This can be extended using a middleware same has the logger.
+
+
+NotFoundHandler
+---------------
+
+For defining a custom ``http.Handler`` to handle **404 Not Found** example:
+
+    ...
+
+    func my404() http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {                                                                                                        http.Error(w, "ne ne ne", 404)
+        })
+    }
+
+    func main() {
+        router := violetear.New()
+        router.NotFoundHandler = my404()
+        ...
+
+NotAllowedHandler
+-----------------
+
+For defining a custom ``http.Handler`` to handle **405 Method Not Allowed**.
+
+PanicHandler
+------------
+
+For using a custom http.HandlerFunc to handle panics
 
 Middleware
 ----------

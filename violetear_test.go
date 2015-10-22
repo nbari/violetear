@@ -180,7 +180,7 @@ func TestRouter(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, http.StatusOK)
-	expect(t, len(w.HeaderMap), 1)
+	expect(t, len(w.HeaderMap), 0)
 }
 
 func TestRoutes(t *testing.T) {
@@ -289,10 +289,23 @@ func TestRequestId(t *testing.T) {
 	expect(t, err, nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
-	req.Header.Set("Request_log_id", "GET-1442587008290786703-1")
+	req.Header.Set("Request_log_id", "5629498000ff0daa102de72aef0001737e7a756e7a756e6369746f2d617069000131000100")
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
-	expect(t, w.HeaderMap["Request_log_id"][0], "GET-1442587008290786703-1")
+	expect(t, w.HeaderMap.Get("Request_log_id"), "5629498000ff0daa102de72aef0001737e7a756e7a756e6369746f2d617069000131000100")
+}
+
+func TestRequestIdCreate(t *testing.T) {
+	router := New()
+	router.LogRequests = true
+	router.Request_ID = "Request-ID"
+	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	expect(t, err, nil)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+	expect(t, len(w.HeaderMap.Get("Request-ID")), 25)
 }
 
 func TestHandleFuncMethods(t *testing.T) {
