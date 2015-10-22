@@ -180,7 +180,7 @@ func TestRouter(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, http.StatusOK)
-	expect(t, len(w.HeaderMap), 0)
+	expect(t, len(w.HeaderMap), 1)
 }
 
 func TestRoutes(t *testing.T) {
@@ -272,12 +272,27 @@ func TestNotFoundHandler(t *testing.T) {
 
 func TestLogRequests(t *testing.T) {
 	router := New()
+	router.LogRequests = true
 	err := router.HandleFunc("/logrequest", func(w http.ResponseWriter, r *http.Request) {})
 	expect(t, err, nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("PUT", "/logrequest", nil)
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
+}
+
+func TestRequestId(t *testing.T) {
+	router := New()
+	router.LogRequests = true
+	router.Request_ID = "Request_log_id"
+	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	expect(t, err, nil)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("Request_log_id", "GET-1442587008290786703-1")
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+	expect(t, w.HeaderMap["Request_log_id"][0], "GET-1442587008290786703-1")
 }
 
 func TestHandleFuncMethods(t *testing.T) {
