@@ -24,39 +24,41 @@ For more details [GoDoc](https://godoc.org/github.com/nbari/violetear):
 package main
 
 import (
-    "fmt"
     "github.com/nbari/violetear"
     "log"
     "net/http"
 )
 
 func catchAll(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, r.URL.Path[1:])
+    w.Write([]byte("I'm catching all\n"))
 }
 
-func helloWorld(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, r.URL.Path[1:])
+func handleGET(w http.ResponseWriter, r *http.Request) {
+    w.Write([]byte("I handle GET requests\n"))
+}
+
+func handlePOST(w http.ResponseWriter, r *http.Request) {
+    w.Write([]byte("I handle POST requests\n"))
 }
 
 func handleUUID(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, r.URL.Path[1:])
+    w.Write([]byte("I handle dynamic requests\n"))
 }
 
 func main() {
     router := violetear.New()
     router.LogRequests = true
-    router.Request_ID = "REQUEST_LOG_ID"
 
-	router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
+    router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
 
-	router.HandleFunc("*", catchAll)
-	router.HandleFunc("/root/", helloWorld, "GET,HEAD")
-	router.HandleFunc("/root/:uuid/item", helloUUID, "POST,PUT")
+    router.HandleFunc("*", catchAll)
+    router.HandleFunc("/method", handleGET, "GET")
+    router.HandleFunc("/method", handlePOST, "POST")
+    router.HandleFunc("/:uuid", handleUUID, "GET,HEAD")
 
     log.Fatal(http.ListenAndServe(":8080", router))
 }
 ```
-
 
 Canonicalized headers issues
 ----------------------------
