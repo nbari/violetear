@@ -102,10 +102,7 @@ func (v *Router) Handle(path string, handler http.Handler, http_methods ...strin
 
 // HandleFunc add a route to the router (path, http.HandlerFunc, methods)
 func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods ...string) error {
-	if len(http_methods) > 0 {
-		return v.Handle(path, handler, http_methods[0])
-	}
-	return v.Handle(path, handler)
+	return v.Handle(path, handler, http_methods...)
 }
 
 // AddRegex adds a ":named" regular expression to the dynamicRoutes
