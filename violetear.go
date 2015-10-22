@@ -25,7 +25,7 @@
 //
 //  func main() {
 //      router := violetear.New()
-//      router.LogRequests = true
+//		router.LogRequests = true
 //      router.Request_ID = "REQUEST_LOG_ID"
 //
 //      router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
@@ -33,8 +33,6 @@
 //      router.HandleFunc("*", catchAll)
 //      router.HandleFunc("/hello/", helloWorld, "GET,HEAD")
 //      router.HandleFunc("/root/:uuid/item", handleUUID, "POST,PUT")
-//
-//      router.SetHeader("X-app-version", "1.1")
 //
 //      log.Fatal(http.ListenAndServe(":8080", router))
 //  }
@@ -58,7 +56,7 @@ type Router struct {
 	// dynamicRoutes map of dynamic routes and regular expresions
 	dynamicRoutes dynamicSet
 
-	// logRequests yes or no
+	// LogRequests yes or no
 	LogRequests bool
 
 	// NotFoundHandler configurable http.Handler which is called when no matching
@@ -68,17 +66,14 @@ type Router struct {
 	// NotAllowedHandler configurable http.Handler which is called when method not allowed.
 	NotAllowedHandler http.Handler
 
+	// PanicHandler function to handle panics.
+	PanicHandler http.HandlerFunc
+
 	// request-id to use
 	Request_ID string
 
-	// extraHeaders adds exta headers to the response
-	extraHeaders map[string]string
-
 	// count counter for hits
 	count int64
-
-	// Verbose
-	Verbose bool
 }
 
 var split_path_rx = regexp.MustCompile(`[^/ ]+`)
@@ -88,18 +83,11 @@ func New() *Router {
 	return &Router{
 		routes:        NewTrie(),
 		dynamicRoutes: make(dynamicSet),
-		extraHeaders:  make(map[string]string),
-		Verbose:       true,
 	}
 }
 
-// SetHeader adds extra headers to the response
-func (v *Router) SetHeader(key, value string) {
-	v.extraHeaders[key] = value
-}
-
-// HandleFunc add a route to the router (path, HandlerFunc, methods)
-func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods ...string) error {
+// Handle registers the handler for the given pattern (path, http.Handler, methods).
+func (v *Router) Handle(path string, handler http.Handler, http_methods ...string) error {
 	path_parts := v.splitPath(path)
 
 	// search for dynamic routes
@@ -117,13 +105,17 @@ func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods 
 		methods = http_methods[0]
 	}
 
-	if v.Verbose {
-		log.Printf("Adding path: %s [%s]", path, methods)
-	}
+	log.Printf("Adding path: %s [%s]", path, methods)
+
 	if err := v.routes.Set(path_parts, handler, methods); err != nil {
 		return err
 	}
 	return nil
+}
+
+// HandleFunc add a route to the router (path, http.HandlerFunc, methods)
+func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods ...string) error {
+	return v.Handle(path, handler, http_methods...)
 }
 
 // AddRegex adds a ":named" regular expression to the dynamicRoutes
@@ -147,6 +139,18 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	atomic.AddInt64(&v.count, 1)
 	lw := NewResponseWriter(w)
 
+	// panic handler
+	defer func() {
+		if err := recover(); err != nil {
+			if v.PanicHandler != nil {
+				v.PanicHandler(w, r)
+			} else {
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+			}
+		}
+	}()
+
+	// _ path never empty, defaults to ("/")
 	node, path, leaf, _ := v.routes.Get(v.splitPath(r.URL.Path))
 
 	// checkMethod check if method is allowed or not
@@ -202,26 +206,8 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Request-ID", rid)
 	}
 
-	// set extra headers
-	for k, v := range v.extraHeaders {
-		w.Header().Set(k, v)
-	}
-
 	//h http.Handler
 	h := match(node, path, leaf)
-
-	// panicHandler
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("panic: %+v - %s [%s] %v %s",
-				err,
-				r.RemoteAddr,
-				r.URL,
-				time.Since(start),
-				rid)
-			http.Error(w, http.StatusText(500), http.StatusInternalServerError)
-		}
-	}()
 
 	// dispatch request
 	h.ServeHTTP(lw, r)
