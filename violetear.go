@@ -25,6 +25,8 @@
 //
 //  func main() {
 //      router := violetear.New()
+//		router.LogRequests = true
+//      router.Request_ID = "REQUEST_LOG_ID"
 //
 //      router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
 //
@@ -43,6 +45,8 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync/atomic"
+	"time"
 )
 
 type Router struct {
@@ -51,6 +55,9 @@ type Router struct {
 
 	// dynamicRoutes map of dynamic routes and regular expresions
 	dynamicRoutes dynamicSet
+
+	// LogRequests yes or no
+	LogRequests bool
 
 	// NotFoundHandler configurable http.Handler which is called when no matching
 	// route is found. If it is not set, http.NotFound is used.
@@ -61,6 +68,12 @@ type Router struct {
 
 	// PanicHandler function to handle panics.
 	PanicHandler http.HandlerFunc
+
+	// request-id to use
+	Request_ID string
+
+	// count counter for hits
+	count int64
 }
 
 var split_path_rx = regexp.MustCompile(`[^/ ]+`)
@@ -122,6 +135,9 @@ func (v *Router) MethodNotAllowed() http.HandlerFunc {
 
 // ServerHTTP dispatches the handler registered in the matched path
 func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	atomic.AddInt64(&v.count, 1)
+	lw := NewResponseWriter(w)
 
 	// panic handler
 	defer func() {
@@ -181,11 +197,30 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return http.NotFoundHandler()
 	}
 
+	// rid Set Request-ID
+	rid := r.Header.Get(v.Request_ID)
+	if rid != "" {
+		w.Header().Set(v.Request_ID, rid)
+	} else {
+		rid = fmt.Sprintf("%s-%d-%d", r.Method, time.Now().UnixNano(), atomic.LoadInt64(&v.count))
+		w.Header().Set("Request-ID", rid)
+	}
+
 	//h http.Handler
 	h := match(node, path, leaf)
 
 	// dispatch request
-	h.ServeHTTP(w, r)
+	h.ServeHTTP(lw, r)
+
+	if v.LogRequests {
+		log.Printf("%s [%s] %d %d %v %s",
+			r.RemoteAddr,
+			r.URL,
+			lw.Status(),
+			lw.Size(),
+			time.Since(start),
+			rid)
+	}
 	return
 }
 
