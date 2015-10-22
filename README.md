@@ -60,6 +60,89 @@ func main() {
 }
 ```
 
+Running this code will show something like this:
+
+```sh
+$ go run test.go
+2015/10/22 17:14:18 Adding path: * [ALL]
+2015/10/22 17:14:18 Adding path: /method [GET]
+2015/10/22 17:14:18 Adding path: /method [POST]
+2015/10/22 17:14:18 Adding path: /:uuid [GET,HEAD]
+```
+
+> test.go contains the code show above
+
+Testing using curl or [http](https://github.com/jkbrzt/httpie)
+
+Any request 'catch-all':
+
+```sh
+$ http POST http://localhost:8080/
+HTTP/1.1 200 OK
+Content-Length: 17
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 22 Oct 2015 15:18:49 GMT
+Request-Id: POST-1445527129854964669-1
+
+I'm catching all
+```
+
+A GET request:
+
+```sh
+$ http http://localhost:8080/method
+HTTP/1.1 200 OK
+Content-Length: 22
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 22 Oct 2015 15:43:25 GMT
+Request-Id: GET-1445528605902591921-1
+
+I handle GET requests
+```
+
+A POST request:
+
+```sh
+$ http POST http://localhost:8080/method
+HTTP/1.1 200 OK
+Content-Length: 23
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 22 Oct 2015 15:44:28 GMT
+Request-Id: POST-1445528668557478433-2
+
+I handle POST requests
+```
+
+A dynamic request using an [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) as the URL resource:
+
+```sh
+$ http http://localhost:8080/50244127-45F6-4210-A89D-FFB0DA039425
+HTTP/1.1 200 OK
+Content-Length: 26
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 22 Oct 2015 15:45:33 GMT
+Request-Id: GET-1445528733916239110-5
+
+I handle dynamic requests
+```
+
+Trying to use POST on the ``/:uuid`` resource will cause a Method not Allowed
+405:
+
+```sh
+$ http POST http://localhost:8080/50244127-45F6-4210-A89D-FFB0DA039425
+HTTP/1.1 405 Method Not Allowed
+Content-Length: 19
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 22 Oct 2015 15:47:19 GMT
+Request-Id: POST-1445528839403536403-6
+X-Content-Type-Options: nosniff
+
+Method Not Allowed
+```
+
+
+
 Canonicalized headers issues
 ----------------------------
 
