@@ -195,7 +195,8 @@ For defining a custom ``http.Handler`` to handle **404 Not Found** example:
     ...
 
     func my404() http.Handler {
-        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {                                                                                                        http.Error(w, "ne ne ne", 404)
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            http.Error(w, "ne ne ne", 404)
         })
     }
 
