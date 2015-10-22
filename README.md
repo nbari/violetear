@@ -6,8 +6,8 @@
 [![Coverage Status](https://coveralls.io/repos/nbari/violetear/badge.svg?branch=develop&service=github)](https://coveralls.io/github/nbari/violetear?branch=develop)
 [![codecov.io](http://codecov.io/github/nbari/violetear/coverage.svg?branch=master)](http://codecov.io/github/nbari/violetear?branch=master)
 
-[violetear](https://raw.githubusercontent.com/nbari/violetear/gh-pages/violetear.png)
-=====================================================================================
+![violetear](https://raw.githubusercontent.com/nbari/violetear/gh-pages/violetear.png)
+======================================================================================
 
 Go HTTP router
 
