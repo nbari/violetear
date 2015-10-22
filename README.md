@@ -15,10 +15,12 @@ Go HTTP router
 * Easy middleware compatibility so that it satisfies the http.Handler interface.
 * Trace Request-ID per request.
 
+Package [GoDoc](https://godoc.org/github.com/nbari/violetear)
+
 Usage
 -----
 
-Package [GoDoc](https://godoc.org/github.com/nbari/violetear), basic example:
+Basic example:
 
 ```go
 package main
