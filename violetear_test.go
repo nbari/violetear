@@ -165,10 +165,14 @@ func myMethodNotFound() http.HandlerFunc {
 	})
 }
 
+func myPanicHandler() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "ne ne ne", 500)
+	})
+}
+
 func TestRouter(t *testing.T) {
 	router := New()
-	router.Verbose = false
-	router.SetHeader("X-app-epazote", "1.1")
 	router.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {})
 
 	w := httptest.NewRecorder()
@@ -176,13 +180,11 @@ func TestRouter(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, http.StatusOK)
-	expect(t, len(w.HeaderMap), 2)
-	expectDeepEqual(t, w.HeaderMap["X-App-Epazote"], []string{"1.1"})
+	expect(t, len(w.HeaderMap), 1)
 }
 
 func TestRoutes(t *testing.T) {
 	router := New()
-	router.Verbose = false
 	for _, v := range dynamicRoutes {
 		router.AddRegex(v.name, v.regex)
 	}
@@ -209,8 +211,6 @@ func TestRoutes(t *testing.T) {
 
 func TestPanic(t *testing.T) {
 	router := New()
-	router.Verbose = false
-	router.SetHeader("X-app-epazote", "1.1")
 	router.HandleFunc("/panic", func(w http.ResponseWriter, r *http.Request) {
 		panic("si si si")
 	})
@@ -220,12 +220,25 @@ func TestPanic(t *testing.T) {
 
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, http.StatusInternalServerError)
-	expectDeepEqual(t, w.HeaderMap["X-App-Epazote"], []string{"1.1"})
+}
+
+func TestPanicHandler(t *testing.T) {
+	router := New()
+	router.PanicHandler = myPanicHandler()
+	router.HandleFunc("/panic", func(w http.ResponseWriter, r *http.Request) {
+		panic("ja ja ja")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/panic", nil)
+
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, http.StatusInternalServerError)
+	expect(t, w.Body.String(), "ne ne ne\n")
 }
 
 func TestHandleFunc(t *testing.T) {
 	router := New()
-	router.Verbose = false
 	err := router.HandleFunc("/:none", func(w http.ResponseWriter, r *http.Request) {})
 	if err == nil {
 		t.Error(err)
@@ -234,13 +247,11 @@ func TestHandleFunc(t *testing.T) {
 	if err == nil {
 		t.Error(err)
 	}
-	router.Verbose = true
 	router.HandleFunc("/verbose", func(w http.ResponseWriter, r *http.Request) {})
 }
 
 func TestNotAllowedHandler(t *testing.T) {
 	router := New()
-	router.Verbose = false
 	router.NotAllowedHandler = myMethodNotAllowed()
 	router.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {}, "GET")
 	w := httptest.NewRecorder()
@@ -251,7 +262,6 @@ func TestNotAllowedHandler(t *testing.T) {
 
 func TestNotFoundHandler(t *testing.T) {
 	router := New()
-	router.Verbose = false
 	router.NotFoundHandler = myMethodNotFound()
 	router.HandleFunc("/404", func(w http.ResponseWriter, r *http.Request) {})
 	w := httptest.NewRecorder()
@@ -262,7 +272,6 @@ func TestNotFoundHandler(t *testing.T) {
 
 func TestLogRequests(t *testing.T) {
 	router := New()
-	router.Verbose = false
 	router.LogRequests = true
 	err := router.HandleFunc("/logrequest", func(w http.ResponseWriter, r *http.Request) {})
 	expect(t, err, nil)
@@ -274,7 +283,6 @@ func TestLogRequests(t *testing.T) {
 
 func TestRequestId(t *testing.T) {
 	router := New()
-	router.Verbose = false
 	router.LogRequests = true
 	router.Request_ID = "Request_log_id"
 	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
@@ -285,4 +293,38 @@ func TestRequestId(t *testing.T) {
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
 	expect(t, w.HeaderMap["Request_log_id"][0], "GET-1442587008290786703-1")
+}
+
+func TestHandleFuncMethods(t *testing.T) {
+	router := New()
+
+	get_handler := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("I handle GET"))
+	}
+	post_handler := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("I handle POST"))
+	}
+
+	router.HandleFunc("/spine", get_handler, "GET")
+	router.HandleFunc("/spine", post_handler, "POST")
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("PUT", "/spine", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 405)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/spine", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Body.String(), "I handle GET")
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/spine", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Body.String(), "I handle POST")
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("HEAD", "/spine", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 405)
 }
