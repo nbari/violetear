@@ -18,44 +18,231 @@ Go HTTP router
 Usage
 -----
 
-For more details [GoDoc](https://godoc.org/github.com/nbari/violetear):
+Package [GoDoc](https://godoc.org/github.com/nbari/violetear), basic example:
 
 ```go
 package main
 
 import (
-    "fmt"
     "github.com/nbari/violetear"
     "log"
     "net/http"
 )
 
 func catchAll(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, r.URL.Path[1:])
+    w.Write([]byte("I'm catching all\n"))
 }
 
-func helloWorld(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, r.URL.Path[1:])
+func handleGET(w http.ResponseWriter, r *http.Request) {
+    w.Write([]byte("I handle GET requests\n"))
+}
+
+func handlePOST(w http.ResponseWriter, r *http.Request) {
+    w.Write([]byte("I handle POST requests\n"))
 }
 
 func handleUUID(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, r.URL.Path[1:])
+    w.Write([]byte("I handle dynamic requests\n"))
 }
 
 func main() {
     router := violetear.New()
     router.LogRequests = true
-    router.Request_ID = "REQUEST_LOG_ID"
 
-	router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
+    router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
 
-	router.HandleFunc("*", catchAll)
-	router.HandleFunc("/root/", helloWorld, "GET,HEAD")
-	router.HandleFunc("/root/:uuid/item", helloUUID, "POST,PUT")
+    router.HandleFunc("*", catchAll)
+    router.HandleFunc("/method", handleGET, "GET")
+    router.HandleFunc("/method", handlePOST, "POST")
+    router.HandleFunc("/:uuid", handleUUID, "GET,HEAD")
 
     log.Fatal(http.ListenAndServe(":8080", router))
 }
 ```
+
+Running this code will show something like this:
+
+```sh
+$ go run test.go
+2015/10/22 17:14:18 Adding path: * [ALL]
+2015/10/22 17:14:18 Adding path: /method [GET]
+2015/10/22 17:14:18 Adding path: /method [POST]
+2015/10/22 17:14:18 Adding path: /:uuid [GET,HEAD]
+```
+
+> test.go contains the code show above
+
+Testing using curl or [http](https://github.com/jkbrzt/httpie)
+
+Any request 'catch-all':
+
+```sh
+$ http POST http://localhost:8080/
+HTTP/1.1 200 OK
+Content-Length: 17
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 22 Oct 2015 15:18:49 GMT
+Request-Id: POST-1445527129854964669-1
+
+I'm catching all
+```
+
+A GET request:
+
+```sh
+$ http http://localhost:8080/method
+HTTP/1.1 200 OK
+Content-Length: 22
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 22 Oct 2015 15:43:25 GMT
+Request-Id: GET-1445528605902591921-1
+
+I handle GET requests
+```
+
+A POST request:
+
+```sh
+$ http POST http://localhost:8080/method
+HTTP/1.1 200 OK
+Content-Length: 23
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 22 Oct 2015 15:44:28 GMT
+Request-Id: POST-1445528668557478433-2
+
+I handle POST requests
+```
+
+A dynamic request using an [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) as the URL resource:
+
+```sh
+$ http http://localhost:8080/50244127-45F6-4210-A89D-FFB0DA039425
+HTTP/1.1 200 OK
+Content-Length: 26
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 22 Oct 2015 15:45:33 GMT
+Request-Id: GET-1445528733916239110-5
+
+I handle dynamic requests
+```
+
+Trying to use POST on the ``/:uuid`` resource will cause a
+*Method not Allowed 405* this because only ``GET`` and ``HEAD``
+methods are allowed:
+
+```sh
+$ http POST http://localhost:8080/50244127-45F6-4210-A89D-FFB0DA039425
+HTTP/1.1 405 Method Not Allowed
+Content-Length: 19
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 22 Oct 2015 15:47:19 GMT
+Request-Id: POST-1445528839403536403-6
+X-Content-Type-Options: nosniff
+
+Method Not Allowed
+```
+
+Middleware
+----------
+
+Violetear uses [Alice](http://justinas.org/alice-painless-middleware-chaining-for-go/) to handle [middleware](middleware).
+
+Example:
+
+```go
+package main
+
+import (
+    "github.com/nbari/violetear"
+    "github.com/nbari/violetear/middleware"
+    "log"
+    "net/http"
+)
+
+func commonHeaders(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("X-app-Version", "1.0")
+        next.ServeHTTP(w, r)
+    })
+}
+
+func middlewareOne(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        log.Println("Executing middlewareOne")
+        next.ServeHTTP(w, r)
+        log.Println("Executing middlewareOne again")
+    })
+}
+
+func middlewareTwo(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        log.Println("Executing middlewareTwo")
+        if r.URL.Path != "/" {
+            return
+        }
+        next.ServeHTTP(w, r)
+        log.Println("Executing middlewareTwo again")
+    })
+}
+
+func catchAll(w http.ResponseWriter, r *http.Request) {
+    log.Println("Executing finalHandler")
+    w.Write([]byte("I catch all"))
+}
+
+func foo(w http.ResponseWriter, r *http.Request) {
+    log.Println("Executing finalHandler")
+    w.Write([]byte("foo"))
+}
+
+func main() {
+    router := violetear.New()
+
+    stdChain := middleware.New(commonHeaders, middlewareOne, middlewareTwo)
+
+    router.Handle("/", stdChain.ThenFunc(catchAll), "GET,HEAD")
+    router.Handle("/foo", stdChain.ThenFunc(foo), "GET,HEAD")
+    router.HandleFunc("/bar", foo)
+
+    log.Fatal(http.ListenAndServe(":8080", router))
+}
+```
+
+> Notice the use or router.Handle and router.HandleFunc when using middleware
+you normally would use route.Handle
+
+Request output example:
+
+```sh
+$ http http://localhost:8080/
+HTTP/1.1 200 OK
+Content-Length: 11
+Content-Type: text/plain; charset=utf-8
+Date: Thu, 22 Oct 2015 16:08:18 GMT
+Request-Id: GET-1445530098002701428-3
+X-App-Version: 1.0
+
+I catch all
+```
+
+On the server you will see something like this:
+
+```sh
+$ go run test.go
+2015/10/22 18:07:55 Adding path: / [GET]
+2015/10/22 18:07:55 Adding path: /foo [GET]
+2015/10/22 18:07:55 Adding path: /bar [ALL]
+2015/10/22 18:08:18 Executing middlewareOne
+2015/10/22 18:08:18 Executing middlewareTwo
+2015/10/22 18:08:18 Executing finalHandler
+2015/10/22 18:08:18 Executing middlewareTwo again
+2015/10/22 18:08:18 Executing middlewareOne again
+```
+
+More references:
+
+* http://www.alexedwards.net/blog/making-and-using-middleware
+* https://justinas.org/alice-painless-middleware-chaining-for-go/
 
 
 Canonicalized headers issues
