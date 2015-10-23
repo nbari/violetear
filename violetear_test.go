@@ -284,7 +284,7 @@ func TestLogRequests(t *testing.T) {
 func TestRequestId(t *testing.T) {
 	router := New()
 	router.LogRequests = true
-	router.Request_ID = "Request_log_id"
+	router.RequestID = "Request_log_id"
 	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 	expect(t, err, nil)
 	w := httptest.NewRecorder()
@@ -298,7 +298,7 @@ func TestRequestId(t *testing.T) {
 func TestRequestIdCreate(t *testing.T) {
 	router := New()
 	router.LogRequests = true
-	router.Request_ID = "Request-ID"
+	router.RequestID = "Request-ID"
 	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 	expect(t, err, nil)
 	w := httptest.NewRecorder()
