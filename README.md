@@ -56,7 +56,7 @@ A catch-all could be used and also a different handler, for example:
 
     router.HandleFunc("/command/ping/*", any_handler, "GET, HEAD")
 
-The **** indicates the router to behave like a catch-all therefore it
+The * indicates the router to behave like a catch-all therefore it
 will match anything after the ``/command/ping/`` if no other condition matches
 before.
 
