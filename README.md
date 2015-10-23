@@ -115,7 +115,7 @@ func handleUUID(w http.ResponseWriter, r *http.Request) {
 func main() {
     router := violetear.New()
     router.LogRequests = true
-    router.Request_ID = "Request-ID"
+    router.RequestID = "Request-ID"
 
     router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
 
@@ -210,7 +210,7 @@ X-Content-Type-Options: nosniff
 Method Not Allowed
 ```
 
-Request_ID
+RequestID
 -----------
 
 To keep track of the "requests" an existing "request ID" can be used, for
@@ -219,14 +219,14 @@ example when using AppEngine the name of the header containing the request ID is
 of the header:
 
     router := violetear.New()
-    router.Request_ID = "Request-ID"
+    router.RequestID = "Request-ID"
 
 If the proxy is using another name, for example "RID" then use something like:
 
     router := violetear.New()
-    router.Request_ID = "RID"
+    router.RequestID = "RID"
 
-If ``router.Request_ID`` is not set, no "request ID" is going to be added to the
+If ``router.RequestID`` is not set, no "request ID" is going to be added to the
 headers, if it is set but not headers found from the request headers, one will
 be created.
 
