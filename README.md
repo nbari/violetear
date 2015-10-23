@@ -17,22 +17,68 @@ Go HTTP router
 
 Package [GoDoc](https://godoc.org/github.com/nbari/violetear)
 
+How it works
+------------
+
+The router is capable off handle any kind or URI static,
+dynamic or catchall and based on the
+[HTTP request Method](http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html)
+accept or discard the request.
+
+For example, suppose we have an API that exposes a service that allow to ping
+any IP address.
+
+To handle only "GET" request for any IPv4 addresss:
+
+    http://api.violetear.org/command/ping/127.0.0.1
+                            \______/\___/\________/
+                                |     |      |
+                                 static      |
+                                          dynamic
+
+The router ``HandlerFunc``  would be:
+
+    router.HandleFunc("/command/ping/:ip", ip_handler, "GET")
+
+For this to work, first the a regex matching ``:ip`` should be added:
+
+    router.AddRegex(":ip", `^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$`)
+
+Now let's say you also want to be available to ping ipv6 or any host:
+
+    http://api.violetear.org/command/ping/*
+                            \______/\___/\_/
+                                |     |   |
+                                 static   |
+                                       catch-all
+
+A catch-all could be used and also a different handler, for example:
+
+    router.HandleFunc("/command/ping/*", any_handler, "GET, HEAD")
+
+The **** indicates the router to behave like a catch-all therefore it
+will match anything after the ``/command/ping/`` if no other condition matches
+before.
+
+Notice also the "GET, HEAD", that indicates that only does HTTP methods will be
+accepted, and any other will not be allowed, router will return a 405 the one
+can also be customised.
+
+
 Usage
 -----
 
-HandleFunc:
+**HandleFunc**:
 
      func HandleFunc(path string, handler http.HandlerFunc, http_methods ...string)
 
-Handle (for middleware):
+**Handle** (useful for middleware):
 
      func Handle(path string, handler http.Handler, http_methods ...string)
-
 
 **http_methods** is a comma separted list of allowed HTTP methods, example:
 
     router.HandleFunc("/view", handleView, "GET, HEAD")
-
 
 **AddRegex** adds a ":named" regular expression to the dynamicRoutes, example:
 
