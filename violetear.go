@@ -26,7 +26,7 @@
 //  func main() {
 //      router := violetear.New()
 //		router.LogRequests = true
-//      router.Request_ID = "REQUEST_LOG_ID"
+//      router.RequestID = "REQUEST_LOG_ID"
 //
 //      router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
 //
@@ -69,10 +69,10 @@ type Router struct {
 	// PanicHandler function to handle panics.
 	PanicHandler http.HandlerFunc
 
-	// Request_ID name of the header to use or create.
-	Request_ID string
+	// RequestID name of the header to use or create.
+	RequestID string
 
-	// count counter for hits, used only if Request_ID is created.
+	// count counter for hits, used only if RequestID is created.
 	count int64
 }
 
@@ -197,13 +197,13 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Request-ID
-	if v.Request_ID != "" {
-		if rid := r.Header.Get(v.Request_ID); rid != "" {
-			lw.Header().Set(v.Request_ID, rid)
+	if v.RequestID != "" {
+		if rid := r.Header.Get(v.RequestID); rid != "" {
+			lw.Header().Set(v.RequestID, rid)
 		} else {
 			atomic.AddInt64(&v.count, 1)
 			rid = fmt.Sprintf("%s-%d-%d", r.Method, time.Now().UnixNano(), atomic.LoadInt64(&v.count))
-			lw.Header().Set(v.Request_ID, rid)
+			lw.Header().Set(v.RequestID, rid)
 		}
 	}
 
@@ -220,7 +220,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			lw.Status(),
 			lw.Size(),
 			time.Since(start),
-			lw.Header().Get(v.Request_ID))
+			lw.Header().Get(v.RequestID))
 	}
 	return
 }
