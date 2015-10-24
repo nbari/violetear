@@ -45,7 +45,6 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
-	"sync/atomic"
 	"time"
 )
 
@@ -71,9 +70,6 @@ type Router struct {
 
 	// RequestID name of the header to use or create.
 	RequestID string
-
-	// count counter for hits, used only if RequestID is created.
-	count int64
 }
 
 var split_path_rx = regexp.MustCompile(`[^/ ]+`)
@@ -199,10 +195,6 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Request-ID
 	if v.RequestID != "" {
 		if rid := r.Header.Get(v.RequestID); rid != "" {
-			lw.Header().Set(v.RequestID, rid)
-		} else {
-			atomic.AddInt64(&v.count, 1)
-			rid = fmt.Sprintf("%s-%d-%d", r.Method, time.Now().UnixNano(), atomic.LoadInt64(&v.count))
 			lw.Header().Set(v.RequestID, rid)
 		}
 	}
