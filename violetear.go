@@ -166,24 +166,32 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// match find a handler for the request
 	match = func(node *Trie, path []string, leaf bool) http.Handler {
+		catchall := false
 		if len(node.Handler) > 0 && leaf {
 			return checkMethod(node, r.Method)
 		} else if node.HasRegex {
-			for k, _ := range node.Node {
-				if strings.HasPrefix(k, ":") {
-					rx := v.dynamicRoutes[k]
+			for _, n := range node.Node {
+				if strings.HasPrefix(n.path, ":") {
+					rx := v.dynamicRoutes[n.path]
 					if rx.MatchString(path[0]) {
-						path[0] = k
+						path[0] = n.path
 						node, path, leaf, _ := node.Get(path)
 						return match(node, path, leaf)
 					}
 				}
 			}
 			if node.HasCatchall {
-				return checkMethod(node.Node["*"], r.Method)
+				catchall = true
 			}
 		} else if node.HasCatchall {
-			return checkMethod(node.Node["*"], r.Method)
+			catchall = true
+		}
+		if catchall {
+			for _, n := range node.Node {
+				if n.path == "*" {
+					return checkMethod(n, r.Method)
+				}
+			}
 		}
 		// NotFound
 		if v.NotFoundHandler != nil {
