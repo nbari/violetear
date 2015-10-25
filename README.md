@@ -404,6 +404,23 @@ func index(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
+Demo: http://api.violetear.org
+
+Using ``curl`` or ``http``:
+
+```sh
+$ http http://api.violetear.org
+HTTP/1.1 200 OK
+Cache-Control: private
+Content-Encoding: gzip
+Content-Length: 32
+Content-Type: text/html; charset=utf-8
+Date: Sun, 25 Oct 2015 06:14:55 GMT
+Request-Id: 562c735f00ff0902f823e514a90001657e76696f6c65746561722d31313037000131000100
+Server: Google Frontend
+
+Hello world!
+```
 
 More references:
 
