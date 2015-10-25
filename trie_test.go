@@ -8,8 +8,8 @@ import (
 func TestTrieNew(t *testing.T) {
 	trie := NewTrie()
 	my_trie := &Trie{
-		Node:    make(map[string]*Trie),
-		Handler: make(map[string]http.Handler),
+		Node:    make([]*Trie, 0),
+		Handler: map[string]http.Handler{},
 	}
 	expectDeepEqual(t, trie, my_trie)
 }
@@ -93,6 +93,7 @@ func TestTrieGet(t *testing.T) {
 
 	err = trie.Set([]string{"root", "alpha", "beta", "gamma"}, nil, "ALL")
 	expect(t, err, nil)
+
 	err = trie.Set([]string{"alpha", "*"}, nil, "ALL")
 	expect(t, err, nil)
 
