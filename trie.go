@@ -7,18 +7,29 @@ import (
 )
 
 type Trie struct {
-	Node        map[string]*Trie
 	Handler     map[string]http.Handler
-	HasRegex    bool
 	HasCatchall bool
+	HasRegex    bool
+	Node        []*Trie
+	path        string
 }
 
 // NewTrie returns a new Trie
 func NewTrie() *Trie {
 	return &Trie{
-		Node:    make(map[string]*Trie),
-		Handler: make(map[string]http.Handler),
+		Node:    make([]*Trie, 0),
+		Handler: map[string]http.Handler{},
 	}
+}
+
+// contains check if path exists on node
+func (t *Trie) contains(path string) (*Trie, bool) {
+	for _, n := range t.Node {
+		if n.path == path {
+			return n, true
+		}
+	}
+	return nil, false
 }
 
 // Set adds a node (url part) to the Trie
@@ -31,11 +42,12 @@ func (t *Trie) Set(path []string, handler http.Handler, method string) error {
 	key := path[0]
 	newpath := path[1:]
 
-	val, ok := t.Node[key]
+	val, ok := t.contains(key)
 
 	if !ok {
 		val = NewTrie()
-		t.Node[key] = val
+		val.path = key
+		t.Node = append(t.Node, val)
 
 		// check for regex ":"
 		if strings.HasPrefix(key, ":") {
@@ -73,11 +85,12 @@ func (t *Trie) Get(path []string) (trie *Trie, p []string, leaf bool, err error)
 	key := path[0]
 	newpath := path[1:]
 
-	if val, ok := t.Node[key]; ok {
+	if val, ok := t.contains(key); ok {
 		if len(newpath) == 0 {
 			return val, path, true, nil
 		}
 		return val.Get(newpath)
 	}
+
 	return t, path, false, nil
 }
