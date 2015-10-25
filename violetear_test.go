@@ -305,7 +305,7 @@ func TestRequestIdCreate(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/", nil)
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
-	expect(t, len(w.HeaderMap.Get("Request-ID")), 25)
+	expect(t, len(w.HeaderMap.Get("Request-ID")), 0)
 }
 
 func TestHandleFuncMethods(t *testing.T) {
