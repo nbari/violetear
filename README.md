@@ -213,10 +213,9 @@ Method Not Allowed
 RequestID
 -----------
 
-To keep track of the "requests" an existing "request ID" can be used, for
-example when using AppEngine the name of the header containing the request ID is
-**Request-ID** therefore to continue using it, the router needs to know the name
-of the header:
+To keep track of the "requests" an existing "request ID" header can be used, if
+the header name for example is **Request-ID** therefore to continue using it,
+the router needs to know the name, example:
 
     router := violetear.New()
     router.RequestID = "Request-ID"
@@ -227,10 +226,8 @@ If the proxy is using another name, for example "RID" then use something like:
     router.RequestID = "RID"
 
 If ``router.RequestID`` is not set, no "request ID" is going to be added to the
-headers, if it is set but not headers found from the request headers, one will
-be created.
-
-This can be extended using a middleware same has the logger.
+headers. This can be extended using a middleware same has the logger check the
+AppEngine example.
 
 
 NotFoundHandler
@@ -357,6 +354,56 @@ $ go run test.go
 2015/10/22 18:08:18 Executing middlewareTwo again
 2015/10/22 18:08:18 Executing middlewareOne again
 ```
+
+AppEngine
+---------
+
+The app.yaml file:
+
+```yaml
+application: 'app-name'
+version: 1
+runtime: go
+api_version: go1
+
+handlers:
+
+- url: /.*
+  script: _go_app
+```
+
+The app.go file:
+
+```go
+package app
+
+import (
+    "appengine"
+    "github.com/nbari/violetear"
+    "github.com/nbari/violetear/middleware"
+    "net/http"
+)
+
+func init() {
+    router := violetear.New()
+    stdChain := middleware.New(requestID)
+    router.Handle("*", stdChain.ThenFunc(index), "GET, HEAD")
+    http.Handle("/", router)
+}
+
+func requestID(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        c := appengine.NewContext(r)
+        w.Header().Set("Request-ID", appengine.RequestID(c))
+        next.ServeHTTP(w, r)
+    })
+}
+
+func index(w http.ResponseWriter, r *http.Request) {
+    w.Write([]byte("Hello world!"))
+}
+```
+
 
 More references:
 
