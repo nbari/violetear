@@ -1,4 +1,43 @@
+// HTTP middleware
+//
 // https://github.com/justinas/alice
+//
+// Basic example:
+//
+//  package main
+//
+//  import (
+//     "github.com/nbari/violetear"
+//     "github.com/nbari/violetear/middleware"
+//     "log"
+//     "net/http"
+//  )
+//
+//  func commonHeaders(next http.Handler) http.Handler {
+//      return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//           w.Header().Set("X-app-Version", "1.0")
+//          next.ServeHTTP(w, r)
+//      })
+//  }
+//
+//  func middlewareOne(next http.Handler) http.Handler {
+//      return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//       log.Println("Executing middlewareOne")
+//          next.ServeHTTP(w, r)
+//          log.Println("Executing middlewareOne again")
+//      })
+//  }
+//
+//  func main() {
+//      router := violetear.New()
+//
+//      stdChain := middleware.New(commonHeaders, middlewareOne)
+//
+//      router.Handle("/", stdChain.ThenFunc(catchAll), "GET,HEAD")
+//
+//      log.Fatal(http.ListenAndServe(":8080", router))
+//  }
+//
 package middleware
 
 import "net/http"

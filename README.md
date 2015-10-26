@@ -20,7 +20,7 @@ Package [GoDoc](https://godoc.org/github.com/nbari/violetear)
 How it works
 ------------
 
-The router is capable off handle any kind or URI static,
+The router is capable off handle any kind or URI, static,
 dynamic or catchall and based on the
 [HTTP request Method](http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html)
 accept or discard the request.
