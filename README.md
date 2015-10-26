@@ -218,7 +218,7 @@ the header name for example is **Request-ID** therefore to continue using it,
 the router needs to know the name, example:
 
     router := violetear.New()
-    router.RequestID = "Request-ID"
+    router.RequestID = "X-Appengine-Request-Log-Id"
 
 If the proxy is using another name, for example "RID" then use something like:
 
