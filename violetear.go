@@ -157,9 +157,8 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		if v.NotAllowedHandler != nil {
 			return v.NotAllowedHandler
-		} else {
-			return v.MethodNotAllowed()
 		}
+		return v.MethodNotAllowed()
 	}
 
 	var match func(node *Trie, path []string, leaf bool) http.Handler
