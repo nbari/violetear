@@ -21,5 +21,6 @@ func (d dynamicSet) Set(name string, regex string) error {
 
 	r := regexp.MustCompile(regex)
 	d[name] = *r
+
 	return nil
 }
