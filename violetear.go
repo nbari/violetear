@@ -25,7 +25,7 @@
 //
 //  func main() {
 //      router := violetear.New()
-//		router.LogRequests = true
+//      router.LogRequests = true
 //      router.RequestID = "REQUEST_LOG_ID"
 //
 //      router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
