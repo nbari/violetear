@@ -14,6 +14,10 @@ type ResponseWriter struct {
 	Context map[string]interface{}
 }
 
+func (w *ResponseWriter) Get(s string) interface{} {
+	return w.Context[s]
+}
+
 // NewResponseWriter returns ResponseWriter
 func NewResponseWriter(w http.ResponseWriter) *ResponseWriter {
 	return &ResponseWriter{w, 0, 0, make(map[string]interface{})}
