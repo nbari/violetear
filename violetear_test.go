@@ -341,3 +341,19 @@ func TestHandleFuncMethods(t *testing.T) {
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 405)
 }
+
+func TestR(t *testing.T) {
+	router := New()
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%#v", r)
+		w.Write([]byte("named params"))
+	}
+
+	router.HandleFunc("/spine", handler, "POST")
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/spine", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+}
