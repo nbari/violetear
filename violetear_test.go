@@ -345,8 +345,10 @@ func TestHandleFuncMethods(t *testing.T) {
 func TestR(t *testing.T) {
 	router := New()
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%#v", r)
+	handler := func(w ResponseWriter, r *http.Request) {
+		// &violetear.ResponseWriter{ResponseWriter:(*httptest.ResponseRecorder)( 0xc8200e0a80), status: 0, size: 0, Context:map[string]interface {}{"sopas":"si si si"}}
+		log.Printf("%# v", w)
+		//		log.Println(w.Context)
 		w.Write([]byte("named params"))
 	}
 

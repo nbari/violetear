@@ -145,6 +145,8 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
+	lw.Context["sopas"] = "si si si"
+
 	// _ path never empty, defaults to ("/")
 	node, path, leaf, _ := v.routes.Get(v.splitPath(r.URL.Path))
 
