@@ -422,6 +422,70 @@ Server: Google Frontend
 Hello world!
 ```
 
+Context & Named parameters
+==========================
+
+In some cases there is a need to pass data across
+handlers/middlewares, for doing this **Violetear** uses
+[net/context](https://godoc.org/golang.org/x/net/context).
+
+Example:
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/nbari/violetear"
+    "log"
+    "net/http"
+)
+
+func catchAll(w http.ResponseWriter, r *http.Request) {
+    cw := w.(*ResponseWriter)
+    fmt.Fprintf(w, "CatchAll value:, %q", cw.ctx.Value("*"))
+}
+
+func handleUUID(w http.ResponseWriter, r *http.Request) {
+    cw := w.(*ResponseWriter)
+    // add a key-value pair to the context
+    cw.ctx = context.WithValue(cw.ctx, "key", "my-value")
+    // print current value for :uuid
+    fmt.Fprintf(w, "Named parameter:, %q", cw.ctx.Value(":uuid"))
+}
+
+func main() {
+    router := violetear.New()
+
+    router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
+
+    router.HandleFunc("*", catchAll)
+    router.HandleFunc("/:uuid", handleUUID, "GET,HEAD")
+
+    log.Fatal(http.ListenAndServe(":8080", router))
+}
+```
+
+Notice that for been available to use the Context ``ctx`` you need to do a type assertion:
+
+    cw := w.(*ResponseWriter)
+
+To set a key-value pair you need to:
+
+    cw.ctx = context.WithValue(cw.ctx, "key", "my-value")
+
+To retrieve a value:
+
+    cw.ctx = context.Value("key").(string)
+
+
+In cases where the same named parameter is used multiple times, example:
+
+    /test/:uuid/:uuid/
+
+The last match value will be assigned.
+
+
 More references:
 
 * http://www.alexedwards.net/blog/making-and-using-middleware

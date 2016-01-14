@@ -41,6 +41,7 @@ package violetear
 
 import (
 	"fmt"
+	"golang.org/x/net/context"
 	"log"
 	"net/http"
 	"regexp"
@@ -173,6 +174,8 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				if strings.HasPrefix(n.path, ":") {
 					rx := v.dynamicRoutes[n.path]
 					if rx.MatchString(path[0]) {
+						// add context named params
+						lw.ctx = context.WithValue(context.Background(), n.path, path[0])
 						path[0] = n.path
 						node, path, leaf, _ := node.Get(path)
 						return match(node, path, leaf)
@@ -188,6 +191,8 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if catchall {
 			for _, n := range node.Node {
 				if n.path == "*" {
+					// add "*" to context
+					lw.ctx = context.WithValue(context.Background(), "*", path[0])
 					return checkMethod(n, r.Method)
 				}
 			}
