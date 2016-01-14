@@ -6,19 +6,11 @@ go:
   - 1.5.1
  # - tip
 
-before_script:
-  - go vet ./...
-
-
 before_install:
+  - go get -u ...
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
   - if ! go get github.com/golang/tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
-
-install:
-  # Add Godeps dependencies to GOPATH and PATH
-  - export GOPATH="${TRAVIS_BUILD_DIR}/Godeps/_workspace:$GOPATH"
-  - export PATH="${TRAVIS_BUILD_DIR}/Godeps/_workspace/bin:$PATH"
 
 script:
   - $HOME/gopath/bin/goveralls -service=travis-ci
