@@ -1,7 +1,7 @@
 package violetear
 
 import (
-	//	"golang.org/x/net/context"
+	"golang.org/x/net/context"
 	"net/http"
 )
 
@@ -9,18 +9,14 @@ import (
 // verbose logging
 type ResponseWriter struct {
 	http.ResponseWriter
-	status  int
-	size    int
-	Context map[string]interface{}
-}
-
-func (w *ResponseWriter) Get(s string) interface{} {
-	return w.Context[s]
+	status int
+	size   int
+	ctx    context.Context
 }
 
 // NewResponseWriter returns ResponseWriter
 func NewResponseWriter(w http.ResponseWriter) *ResponseWriter {
-	return &ResponseWriter{w, 0, 0, make(map[string]interface{})}
+	return &ResponseWriter{w, 0, 0, context.TODO()}
 }
 
 // Status provides an easy way to retrieve the status code

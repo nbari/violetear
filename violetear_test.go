@@ -342,20 +342,33 @@ func TestHandleFuncMethods(t *testing.T) {
 	expect(t, w.Code, 405)
 }
 
-func TestR(t *testing.T) {
+func TestContexNamedParams(t *testing.T) {
 	router := New()
+
+	for _, v := range dynamicRoutes {
+		router.AddRegex(v.name, v.regex)
+	}
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		cw := w.(*ResponseWriter)
-		log.Printf("%# v", cw.Get("sopas"))
-		//		log.Println(w.Context)
+		if r.Method == "POST" {
+			expect(t, cw.ctx.Value(":uuid"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+		}
+		if r.Method == "GET" {
+			expect(t, cw.ctx.Value("*"), "catch-all-context")
+		}
 		w.Write([]byte("named params"))
 	}
 
-	router.HandleFunc("/spine", handler, "POST")
+	router.HandleFunc("/test/:uuid", handler, "POST")
+	router.HandleFunc("/test/*", handler, "GET")
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/spine", nil)
+	req, _ := http.NewRequest("POST", "/test/A97F0AF3-043D-4376-82BE-CD6C1A524E0E", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+
+	req, _ = http.NewRequest("GET", "/test/catch-all-context", nil)
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
 }
