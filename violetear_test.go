@@ -1,6 +1,8 @@
 package violetear
 
 import (
+	"github.com/nbari/violetear/middleware"
+	"golang.org/x/net/context"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -369,6 +371,58 @@ func TestContexNamedParams(t *testing.T) {
 	expect(t, w.Code, 200)
 
 	req, _ = http.NewRequest("GET", "/test/catch-all-context", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+}
+
+func TestContexMiddleware(t *testing.T) {
+	router := New()
+
+	// Test middleware with context
+	m1 := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cw := w.(*ResponseWriter)
+			cw.ctx = context.WithValue(cw.ctx, "m1", "m1")
+			next.ServeHTTP(w, r)
+		})
+	}
+
+	m2 := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cw := w.(*ResponseWriter)
+			cw.ctx = context.WithValue(cw.ctx, "m2", "m2")
+			cw.ctx = context.WithValue(cw.ctx, "uuid val", cw.ctx.Value(":uuid"))
+			next.ServeHTTP(w, r)
+		})
+	}
+
+	m3 := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cw := w.(*ResponseWriter)
+			cw.ctx = context.WithValue(cw.ctx, "m3", "m3")
+			next.ServeHTTP(w, r)
+		})
+	}
+
+	for _, v := range dynamicRoutes {
+		router.AddRegex(v.name, v.regex)
+	}
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		cw := w.(*ResponseWriter)
+		expect(t, cw.ctx.Value("m1"), "m1")
+		expect(t, cw.ctx.Value("m2"), "m2")
+		expect(t, cw.ctx.Value("m3"), "m3")
+		expect(t, cw.ctx.Value("uuid val"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+		expect(t, cw.ctx.Value(":uuid"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+		w.Write([]byte("named params"))
+	}
+
+	stdChain := middleware.New(m1, m2, m3)
+	router.Handle("/foo/:uuid", stdChain.ThenFunc(handler), "PATCH")
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("PATCH", "/foo/A97F0AF3-043D-4376-82BE-CD6C1A524E0E", nil)
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
 }
