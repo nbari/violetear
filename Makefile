@@ -5,7 +5,7 @@ GO ?= go
 all: build test
 
 deps:
-	${GO} get -u golang.org/x/net/context
+	${GO} get golang.org/x/net/context
 
 build: deps
 build:
