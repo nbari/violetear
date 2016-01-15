@@ -53,3 +53,22 @@ func (w *ResponseWriter) WriteHeader(statusCode int) {
 	w.status = statusCode
 	w.ResponseWriter.WriteHeader(statusCode)
 }
+
+func (w *ResponseWriter) Get(s string) interface{} {
+	return w.ctx.Value(s)
+}
+
+func (w *ResponseWriter) Set(k string, v interface{}) {
+	w.ctx = context.WithValue(w.ctx, k, v)
+}
+
+func (w *ResponseWriter) SetParam(n string, v string) {
+	param := w.Get(n)
+	if param != nil {
+		s := []interface{}{param}
+		s = append(s, v)
+		w.Set(n, s)
+	} else {
+		w.Set(n, v)
+	}
+}
