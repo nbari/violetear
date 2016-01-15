@@ -443,6 +443,7 @@ import (
 
 func catchAll(w http.ResponseWriter, r *http.Request) {
     cw := w.(*ResponseWriter)
+    // Get & print the content of named-param *
     fmt.Fprintf(w, "CatchAll value:, %q", cw.Get("*"))
 }
 
@@ -485,7 +486,9 @@ To retrieve a value:
 
 or
 
-    cw.ctx.Value("key").(string)
+    cw.ctx.Value("key")
+    
+> You may need [Type assertions](https://golang.org/ref/spec#Type_assertions): ``cw.Get(value).(string)`` depending on your needs.
 
 
 In cases where the same named parameter is used multiple times, example:
@@ -499,12 +502,20 @@ An slice is created, for getting the values you need to do something like:
 After this you can access the slice like normal:
 
         fmt.Println(params[0],  params[1])
+        
+        
+Notice the ``:`` prefix when getting the named_parameters, this is because the same context ``ctx`` is used among all the requests, therefore if you want to create a ``key-value`` pair with something like ``uuid`` it dosn't overwrite the ``:uuid`` named parameter:
+
+	cw.Get(":uuid") get the named parameter set by the router.
+	cw.GET("uuid") get a custom key 
 
 
 More references:
 
 * http://www.alexedwards.net/blog/making-and-using-middleware
 * https://justinas.org/alice-painless-middleware-chaining-for-go/
+* https://golang.org/ref/spec#Type_assertions (for the context)
+* https://godoc.org/golang.org/x/net/context
 
 
 Canonicalized headers issues
