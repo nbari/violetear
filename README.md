@@ -13,6 +13,7 @@ Go HTTP router
 * Keep it simple and small, avoiding extra complexity at all cost. [KISS](http://en.wikipedia.org/wiki/KISS_principle)
 * Support for static and dynamic routing.
 * Easy middleware compatibility so that it satisfies the http.Handler interface.
+* Common context between middleware.
 * Trace Request-ID per request.
 
 Package [GoDoc](https://godoc.org/github.com/nbari/violetear)
@@ -487,7 +488,7 @@ To retrieve a value:
 or
 
     cw.ctx.Value("key")
-    
+
 > You may need [Type assertions](https://golang.org/ref/spec#Type_assertions): ``cw.Get(value).(string)`` depending on your needs.
 
 
@@ -502,12 +503,12 @@ An slice is created, for getting the values you need to do something like:
 After this you can access the slice like normal:
 
         fmt.Println(params[0],  params[1])
-        
-        
+
+
 Notice the ``:`` prefix when getting the named_parameters, this is because the same context ``ctx`` is used among all the requests, therefore if you want to create a ``key-value`` pair with something like ``uuid`` it dosn't overwrite the ``:uuid`` named parameter:
 
 	cw.Get(":uuid") get the named parameter set by the router.
-	cw.GET("uuid") get a custom key 
+	cw.GET("uuid") get a custom key
 
 
 More references:
