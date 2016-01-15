@@ -1,12 +1,17 @@
-.PHONY: all test build cover
+.PHONY: all deps test build cover
 
 GO ?= go
 
 all: build test
 
+deps:
+	${GO} get -u golang.org/x/net/context
+
+build: deps
 build:
 	${GO} build
 
+test: deps
 test:
 	${GO} test -v
 
