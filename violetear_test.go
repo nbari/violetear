@@ -353,11 +353,12 @@ func TestContexNamedParams(t *testing.T) {
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		cw := w.(*ResponseWriter)
+
 		if r.Method == "POST" {
-			expect(t, cw.ctx.Value(":uuid"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+			expect(t, cw.Get(":uuid"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
 		}
 		if r.Method == "GET" {
-			expect(t, cw.ctx.Value("*"), "catch-all-context")
+			expect(t, cw.Get("*"), "catch-all-context")
 		}
 		w.Write([]byte("named params"))
 	}
@@ -382,7 +383,8 @@ func TestContexMiddleware(t *testing.T) {
 	m1 := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cw := w.(*ResponseWriter)
-			cw.ctx = context.WithValue(cw.ctx, "m1", "m1")
+			cw.Set("m1", "m1")
+			cw.ctx = context.WithValue(cw.ctx, "key", 1)
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -390,8 +392,8 @@ func TestContexMiddleware(t *testing.T) {
 	m2 := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cw := w.(*ResponseWriter)
-			cw.ctx = context.WithValue(cw.ctx, "m2", "m2")
-			cw.ctx = context.WithValue(cw.ctx, "uuid val", cw.ctx.Value(":uuid"))
+			cw.Set("m2", "m2")
+			cw.Set("uuid val", cw.Get(":uuid"))
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -399,7 +401,8 @@ func TestContexMiddleware(t *testing.T) {
 	m3 := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cw := w.(*ResponseWriter)
-			cw.ctx = context.WithValue(cw.ctx, "m3", "m3")
+			cw.Set("m3", "m3")
+			cw.ctx = context.WithValue(cw.ctx, "ctx", "string")
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -410,11 +413,13 @@ func TestContexMiddleware(t *testing.T) {
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		cw := w.(*ResponseWriter)
-		expect(t, cw.ctx.Value("m1"), "m1")
-		expect(t, cw.ctx.Value("m2"), "m2")
-		expect(t, cw.ctx.Value("m3"), "m3")
-		expect(t, cw.ctx.Value("uuid val"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
-		expect(t, cw.ctx.Value(":uuid"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+		expect(t, cw.Get("m1"), "m1")
+		expect(t, cw.Get("m2"), "m2")
+		expect(t, cw.Get("m3"), "m3")
+		expect(t, cw.Get("uuid val"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+		expect(t, cw.Get(":uuid"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+		expect(t, cw.ctx.Value("ctx"), "string")
+		expect(t, cw.ctx.Value("key"), 1)
 		w.Write([]byte("named params"))
 	}
 
@@ -423,6 +428,31 @@ func TestContexMiddleware(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("PATCH", "/foo/A97F0AF3-043D-4376-82BE-CD6C1A524E0E", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+}
+
+func TestContexNamedParamsSlice(t *testing.T) {
+	router := New()
+
+	for _, v := range dynamicRoutes {
+		router.AddRegex(v.name, v.regex)
+	}
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		cw := w.(*ResponseWriter)
+
+		params := cw.Get(":uuid").([]interface{})
+
+		expect(t, params[0], "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+		expect(t, params[1], "12EC2DA8-403D-4C8B-AE39-D011762181A0")
+		w.Write([]byte("named params"))
+	}
+
+	router.HandleFunc("/test/:uuid/:uuid", handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test/A97F0AF3-043D-4376-82BE-CD6C1A524E0E/12EC2DA8-403D-4C8B-AE39-D011762181A0", nil)
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
 }
