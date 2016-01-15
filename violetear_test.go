@@ -2,6 +2,7 @@ package violetear
 
 import (
 	"github.com/nbari/violetear/middleware"
+	"golang.org/x/net/context"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -357,7 +358,7 @@ func TestContexNamedParams(t *testing.T) {
 			expect(t, cw.Get(":uuid"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
 		}
 		if r.Method == "GET" {
-			expect(t, cw.Get(":*"), "catch-all-context")
+			expect(t, cw.Get("*"), "catch-all-context")
 		}
 		w.Write([]byte("named params"))
 	}
@@ -383,6 +384,7 @@ func TestContexMiddleware(t *testing.T) {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cw := w.(*ResponseWriter)
 			cw.Set("m1", "m1")
+			cw.ctx = context.WithValue(cw.ctx, "key", 1)
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -400,6 +402,7 @@ func TestContexMiddleware(t *testing.T) {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			cw := w.(*ResponseWriter)
 			cw.Set("m3", "m3")
+			cw.ctx = context.WithValue(cw.ctx, "ctx", "string")
 			next.ServeHTTP(w, r)
 		})
 	}
@@ -415,6 +418,8 @@ func TestContexMiddleware(t *testing.T) {
 		expect(t, cw.Get("m3"), "m3")
 		expect(t, cw.Get("uuid val"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
 		expect(t, cw.Get(":uuid"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+		expect(t, cw.ctx.Value("ctx"), "string")
+		expect(t, cw.ctx.Value("key"), 1)
 		w.Write([]byte("named params"))
 	}
 

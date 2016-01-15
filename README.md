@@ -443,15 +443,15 @@ import (
 
 func catchAll(w http.ResponseWriter, r *http.Request) {
     cw := w.(*ResponseWriter)
-    fmt.Fprintf(w, "CatchAll value:, %q", cw.ctx.Value("*"))
+    fmt.Fprintf(w, "CatchAll value:, %q", cw.Get("*"))
 }
 
 func handleUUID(w http.ResponseWriter, r *http.Request) {
     cw := w.(*ResponseWriter)
     // add a key-value pair to the context
-    cw.ctx = context.WithValue(cw.ctx, "key", "my-value")
+    cw.Set("key", "my-value")
     // print current value for :uuid
-    fmt.Fprintf(w, "Named parameter:, %q", cw.ctx.Value(":uuid"))
+    fmt.Fprintf(w, "Named parameter:, %q", cw.Get(":uuid"))
 }
 
 func main() {
@@ -466,24 +466,39 @@ func main() {
 }
 ```
 
-Notice that for been available to use the Context ``ctx`` you need to do a type assertion:
+Notice that for been available to use the **Context** ``ctx`` you need to do a type assertion:
 
     cw := w.(*ResponseWriter)
 
 To set a key-value pair you need to:
 
+    cw.Set(key, value)
+
+or
+
     cw.ctx = context.WithValue(cw.ctx, "key", "my-value")
+
 
 To retrieve a value:
 
-    cw.ctx = context.Value("key").(string)
+    cw.Get(value)
+
+or
+
+    cw.ctx.Value("key").(string)
 
 
 In cases where the same named parameter is used multiple times, example:
 
     /test/:uuid/:uuid/
 
-The last match value will be assigned.
+An slice is created, for getting the values you need to do something like:
+
+		params := cw.Get(":uuid").([]interface{})
+
+After this you can access the slice like normal:
+
+        fmt.Println(params[0],  params[1])
 
 
 More references:

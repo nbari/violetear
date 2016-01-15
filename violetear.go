@@ -191,7 +191,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			for _, n := range node.Node {
 				if n.path == "*" {
 					// add "*" to context
-					lw.SetParam(":*", path[0])
+					lw.SetParam("*", path[0])
 					return checkMethod(n, r.Method)
 				}
 			}
