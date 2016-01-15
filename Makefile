@@ -6,6 +6,7 @@ all: build test
 
 deps:
 	${GO} get golang.org/x/net/context
+	${GO} get github.com/nbari/violetear/middleware
 
 build: deps
 build:
