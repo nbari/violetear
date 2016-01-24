@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type dynamicSet map[string]regexp.Regexp
+type dynamicSet map[string]*regexp.Regexp
 
 func (d dynamicSet) Set(name string, regex string) error {
 	if !strings.HasPrefix(name, ":") {
@@ -20,7 +20,7 @@ func (d dynamicSet) Set(name string, regex string) error {
 	}
 
 	r := regexp.MustCompile(regex)
-	d[name] = *r
+	d[name] = r
 
 	return nil
 }
