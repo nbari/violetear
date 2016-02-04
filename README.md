@@ -443,13 +443,13 @@ import (
 )
 
 func catchAll(w http.ResponseWriter, r *http.Request) {
-    cw := w.(*ResponseWriter)
+    cw := w.(*violetear.ResponseWriter)
     // Get & print the content of named-param *
     fmt.Fprintf(w, "CatchAll value:, %q", cw.Get("*"))
 }
 
 func handleUUID(w http.ResponseWriter, r *http.Request) {
-    cw := w.(*ResponseWriter)
+    cw := w.(*violetear.ResponseWriter)
     // add a key-value pair to the context
     cw.Set("key", "my-value")
     // print current value for :uuid
@@ -470,7 +470,7 @@ func main() {
 
 Notice that for been available to use the **Context** ``ctx`` you need to do a type assertion:
 
-    cw := w.(*ResponseWriter)
+    cw := w.(*violetear.ResponseWriter)
 
 To set a key-value pair you need to:
 
