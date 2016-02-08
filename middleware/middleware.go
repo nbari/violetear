@@ -52,10 +52,7 @@ type Chain struct {
 
 // New creates a new chain
 func New(constructors ...Constructor) Chain {
-	c := Chain{}
-	c.constructors = append(c.constructors, constructors...)
-
-	return c
+	return Chain{append(([]Constructor)(nil), constructors...)}
 }
 
 // Then chains the middleware and returns the final http.Handler.
