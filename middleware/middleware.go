@@ -61,18 +61,15 @@ func New(constructors ...Constructor) Chain {
 //     m1(m2(m3(h)))
 // Then() treats nil as http.DefaultServeMux.
 func (c Chain) Then(h http.Handler) http.Handler {
-	var final http.Handler
-	if h != nil {
-		final = h
-	} else {
-		final = http.DefaultServeMux
+	if h == nil {
+		h = http.DefaultServeMux
 	}
 
 	for i := len(c.constructors) - 1; i >= 0; i-- {
-		final = c.constructors[i](final)
+		h = c.constructors[i](h)
 	}
 
-	return final
+	return h
 }
 
 // ThenFunc works identically to Then, but takes
