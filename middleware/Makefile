@@ -1,4 +1,4 @@
-.PHONY: all deps test build cover
+.PHONY: all test build cover
 
 GO ?= go
 
@@ -7,7 +7,6 @@ all: build test
 build:
 	${GO} build
 
-test: deps
 test:
 	${GO} test -v
 
