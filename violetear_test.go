@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"runtime"
 	"testing"
 
 	"github.com/nbari/violetear/middleware"
@@ -13,14 +14,16 @@ import (
 
 /* Test Helpers */
 func expect(t *testing.T, a interface{}, b interface{}) {
+	_, fn, line, _ := runtime.Caller(1)
 	if a != b {
-		t.Errorf("Expected %v (type %v) - Got %v (type %v)", b, reflect.TypeOf(b), a, reflect.TypeOf(a))
+		t.Fatalf("Expected: %v (type %v)  Got: %v (type %v)  in %s:%d", b, reflect.TypeOf(b), a, reflect.TypeOf(a), fn, line)
 	}
 }
 
 func expectDeepEqual(t *testing.T, a interface{}, b interface{}) {
+	_, fn, line, _ := runtime.Caller(1)
 	if !reflect.DeepEqual(a, b) {
-		t.Errorf("Expected %v (type %v) - Got %v (type %v)", b, reflect.TypeOf(b), a, reflect.TypeOf(a))
+		t.Fatalf("Expected: %v (type %v)  Got: %v (type %v)  in %s:%d", b, reflect.TypeOf(b), a, reflect.TypeOf(a), fn, line)
 	}
 }
 

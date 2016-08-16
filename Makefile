@@ -14,7 +14,7 @@ build:
 
 test: deps
 test:
-	${GO} test -v
+	${GO} test
 
 cover:
 	${GO} test -cover && \
