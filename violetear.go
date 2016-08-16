@@ -40,6 +40,7 @@
 package violetear
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -133,6 +134,7 @@ func (v *Router) MethodNotAllowed() http.HandlerFunc {
 func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	lw := NewResponseWriter(w)
+	ctx := r.Context()
 
 	// panic handler
 	defer func() {
@@ -174,7 +176,8 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					rx := v.dynamicRoutes[n.path]
 					if rx.MatchString(path[0]) {
 						// add context named params
-						lw.SetParam(n.path, path[0])
+						//lw.SetParam(n.path, path[0])
+						ctx = context.WithValue(ctx, n.path, path[0])
 						path[0] = n.path
 						node, path, leaf, _ := node.Get(path)
 						return match(node, path, leaf)
@@ -191,7 +194,8 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			for _, n := range node.Node {
 				if n.path == "*" {
 					// add "*" to context
-					lw.SetParam("*", path[0])
+					// lw.SetParam("*", path[0])
+					ctx = context.WithValue(ctx, "*", path[0])
 					return checkMethod(n, r.Method)
 				}
 			}
@@ -214,7 +218,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h := match(node, path, leaf)
 
 	// dispatch request
-	h.ServeHTTP(lw, r)
+	h.ServeHTTP(lw, r.WithContext(ctx))
 
 	if v.LogRequests {
 		log.Printf("%s [%s] %d %d %v %s",
