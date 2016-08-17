@@ -34,7 +34,6 @@ func (t *Trie) contains(path string) (*Trie, bool) {
 
 // Set adds a node (url part) to the Trie
 func (t *Trie) Set(path []string, handler http.Handler, method string) error {
-
 	if len(path) == 0 {
 		return errors.New("path cannot be empty")
 	}

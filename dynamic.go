@@ -9,7 +9,7 @@ import (
 
 type dynamicSet map[string]*regexp.Regexp
 
-func (d dynamicSet) Set(name string, regex string) error {
+func (d dynamicSet) Set(name, regex string) error {
 	if !strings.HasPrefix(name, ":") {
 		return errors.New("Dynamic route name must start with a colon ':'")
 	}
