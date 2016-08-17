@@ -1,6 +1,7 @@
 package violetear
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -9,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/nbari/violetear/middleware"
-	"golang.org/x/net/context"
 )
 
 /* Test Helpers */

@@ -1,13 +1,13 @@
 [![GoDoc](https://godoc.org/github.com/nbari/violetear?status.svg)](https://godoc.org/github.com/nbari/violetear)
 [![Build Status](https://travis-ci.org/nbari/violetear.svg?branch=master)](https://travis-ci.org/nbari/violetear)
-[![Coverage](http://gocover.io/_badge/github.com/nbari/violetear?0)](http://gocover.io/github.com/nbari/violetear)
+[![Coverage](https://gocover.io/_badge/github.com/nbari/violetear?0)](https://gocover.io/github.com/nbari/violetear)
 [![Coverage Status](https://coveralls.io/repos/nbari/violetear/badge.svg?branch=develop&service=github)](https://coveralls.io/github/nbari/violetear?branch=develop)
 
 # violetear
 Go HTTP router
 
 ### Design Goals
-* Keep it simple and small, avoiding extra complexity at all cost. [KISS](http://en.wikipedia.org/wiki/KISS_principle)
+* Keep it simple and small, avoiding extra complexity at all cost. [KISS](https://en.wikipedia.org/wiki/KISS_principle)
 * Support for static and dynamic routing.
 * Easy middleware compatibility so that it satisfies the http.Handler interface.
 * Common context between middleware.
@@ -38,7 +38,7 @@ The router ``HandlerFunc``  would be:
 
     router.HandleFunc("/command/ping/:ip", ip_handler, "GET")
 
-For this to work, first the a regex matching ``:ip`` should be added:
+For this to work, first the regex matching ``:ip`` should be added:
 
     router.AddRegex(":ip", `^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$`)
 
@@ -54,7 +54,7 @@ A catch-all could be used and also a different handler, for example:
 
     router.HandleFunc("/command/ping/*", any_handler, "GET, HEAD")
 
-The * indicates the router to behave like a catch-all therefore it
+The ``*`` indicates the router to behave like a catch-all therefore it
 will match anything after the ``/command/ping/`` if no other condition matches
 before.
 
@@ -65,6 +65,18 @@ can also be customised.
 
 Usage
 -----
+
+http://gopkg.in/nbari/violetear.v2
+
+If using ``go >= 1.7`` (using context form the standard library):
+
+    import "gopkg.in/nbari/violetear.v2"
+
+
+If using ``go < 1.7``:
+
+    import "gopkg.in/nbari/violetear.v1"
+
 
 **HandleFunc**:
 
@@ -209,7 +221,7 @@ Method Not Allowed
 ```
 
 RequestID
------------
+---------
 
 To keep track of the "requests" an existing "request ID" header can be used, if
 the header name for example is **Request-ID** therefore to continue using it,
@@ -267,58 +279,66 @@ Example:
 package main
 
 import (
-    "github.com/nbari/violetear"
-    "github.com/nbari/violetear/middleware"
-    "log"
-    "net/http"
+	"context"
+	"log"
+	"net/http"
+
+	"github.com/nbari/violetear"
+	"github.com/nbari/violetear/middleware"
 )
 
 func commonHeaders(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("X-app-Version", "1.0")
-        next.ServeHTTP(w, r)
-    })
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-app-Version", "1.0")
+		next.ServeHTTP(w, r)
+	})
 }
 
 func middlewareOne(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        log.Println("Executing middlewareOne")
-        next.ServeHTTP(w, r)
-        log.Println("Executing middlewareOne again")
-    })
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Executing middlewareOne")
+		ctx := context.WithValue(r.Context(), "m1", "m1")
+		ctx = context.WithValue(ctx, "key", 1)
+		next.ServeHTTP(w, r.WithContext(ctx))
+		log.Println("Executing middlewareOne again")
+	})
 }
 
 func middlewareTwo(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        log.Println("Executing middlewareTwo")
-        if r.URL.Path != "/" {
-            return
-        }
-        next.ServeHTTP(w, r)
-        log.Println("Executing middlewareTwo again")
-    })
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Executing middlewareTwo")
+		if r.URL.Path != "/" {
+			return
+		}
+		ctx := context.WithValue(r.Context(), "m2", "m2")
+		next.ServeHTTP(w, r.WithContext(ctx))
+		log.Println("Executing middlewareTwo again")
+	})
 }
 
 func catchAll(w http.ResponseWriter, r *http.Request) {
-    log.Println("Executing finalHandler")
-    w.Write([]byte("I catch all"))
+	log.Printf("Executing finalHandler\nm1:%s\nkey:%d\nm2:%s\n",
+		r.Context().Value("m1"),
+		r.Context().Value("key"),
+		r.Context().Value("m2"),
+	)
+	w.Write([]byte("I catch all"))
 }
 
 func foo(w http.ResponseWriter, r *http.Request) {
-    log.Println("Executing finalHandler")
-    w.Write([]byte("foo"))
+	panic("this will never happen, because of the return")
 }
 
 func main() {
-    router := violetear.New()
+	router := violetear.New()
 
-    stdChain := middleware.New(commonHeaders, middlewareOne, middlewareTwo)
+	stdChain := middleware.New(commonHeaders, middlewareOne, middlewareTwo)
 
-    router.Handle("/", stdChain.ThenFunc(catchAll), "GET,HEAD")
-    router.Handle("/foo", stdChain.ThenFunc(foo), "GET,HEAD")
-    router.HandleFunc("/bar", foo)
+	router.Handle("/", stdChain.ThenFunc(catchAll), "GET,HEAD")
+	router.Handle("/foo", stdChain.ThenFunc(foo), "GET,HEAD")
+	router.HandleFunc("/bar", foo)
 
-    log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
 ```
 
@@ -343,14 +363,17 @@ On the server you will see something like this:
 
 ```sh
 $ go run test.go
-2015/10/22 18:07:55 Adding path: / [GET]
-2015/10/22 18:07:55 Adding path: /foo [GET]
-2015/10/22 18:07:55 Adding path: /bar [ALL]
-2015/10/22 18:08:18 Executing middlewareOne
-2015/10/22 18:08:18 Executing middlewareTwo
-2015/10/22 18:08:18 Executing finalHandler
-2015/10/22 18:08:18 Executing middlewareTwo again
-2015/10/22 18:08:18 Executing middlewareOne again
+2016/08/17 18:08:42 Adding path: / [GET,HEAD]
+2016/08/17 18:08:42 Adding path: /foo [GET,HEAD]
+2016/08/17 18:08:42 Adding path: /bar [ALL]
+2016/08/17 18:08:47 Executing middlewareOne
+2016/08/17 18:08:47 Executing middlewareTwo
+2016/08/17 18:08:47 Executing finalHandler
+m1:m1
+key:1
+m2:m2
+2016/08/17 18:08:47 Executing middlewareTwo again
+2016/08/17 18:08:47 Executing middlewareOne again
 ```
 
 AppEngine
@@ -433,24 +456,27 @@ Example:
 package main
 
 import (
+    "context"
     "fmt"
-    "github.com/nbari/violetear"
     "log"
     "net/http"
+
+    "github.com/nbari/violetear"
 )
 
 func catchAll(w http.ResponseWriter, r *http.Request) {
-    cw := w.(*violetear.ResponseWriter)
     // Get & print the content of named-param *
-    fmt.Fprintf(w, "CatchAll value:, %q", cw.Get("*"))
+    fmt.Fprintf(w, "CatchAll value:, %q", r.Context().Value("*"))
 }
 
 func handleUUID(w http.ResponseWriter, r *http.Request) {
-    cw := w.(*violetear.ResponseWriter)
     // add a key-value pair to the context
-    cw.Set("key", "my-value")
+    ctx := context.WithValue(r.Context(), "key", "my-value")
     // print current value for :uuid
-    fmt.Fprintf(w, "Named parameter:, %q", cw.Get(":uuid"))
+    fmt.Fprintf(w, "Named parameter: %q, key: %s",
+        ctx.Value(":uuid"),
+        ctx.Value("key"),
+    )
 }
 
 func main() {
@@ -465,7 +491,33 @@ func main() {
 }
 ```
 
-Notice that for been available to use the **Context** ``ctx`` you need to do a type assertion:
+## duplicated named parameters
+
+In cases where the same named parameter is used multiple times, example:
+
+    /test/:uuid/:uuid/
+
+An slice is created, for getting the values you need to do something like:
+
+        params := r.Context().Value(":uuid").([]string)
+
+After this you can access the slice like normal:
+
+        fmt.Println(params[0], params[1])
+
+
+Notice the ``:`` prefix when getting the named_parameters, this is because the
+same context ``ctx`` is used among all the requests, therefore if you want to
+create a ``key-value`` pair with something like ``uuid`` it doesn't overwrite the
+``:uuid`` named parameter:
+
+    r.Context().Value(":uuid") get the named parameter set by the router.
+    r.Context().Value("uuid") get a custom key named ``uuid``
+
+
+## Only for go < 1.7
+
+For been available to use the **Context** ``ctx`` you need to do a type assertion:
 
     cw := w.(*violetear.ResponseWriter)
 
@@ -489,31 +541,12 @@ or
 > You may need [Type assertions](https://golang.org/ref/spec#Type_assertions): ``cw.Get(value).(string)`` depending on your needs.
 
 
-In cases where the same named parameter is used multiple times, example:
-
-    /test/:uuid/:uuid/
-
-An slice is created, for getting the values you need to do something like:
-
-		params := cw.Get(":uuid").([]interface{})
-
-After this you can access the slice like normal:
-
-        fmt.Println(params[0],  params[1])
-
-
-Notice the ``:`` prefix when getting the named_parameters, this is because the same context ``ctx`` is used among all the requests, therefore if you want to create a ``key-value`` pair with something like ``uuid`` it dosn't overwrite the ``:uuid`` named parameter:
-
-	cw.Get(":uuid") get the named parameter set by the router.
-	cw.GET("uuid") get a custom key
-
-
 More references:
 
-* http://www.alexedwards.net/blog/making-and-using-middleware
+* https://tip.golang.org/doc/go1.7#context
 * https://justinas.org/alice-painless-middleware-chaining-for-go/
-* https://golang.org/ref/spec#Type_assertions (for the context)
-* https://godoc.org/golang.org/x/net/context
+* http://www.alexedwards.net/blog/making-and-using-middleware
+* https://golang.org/ref/spec#Type_assertions
 
 
 Canonicalized headers issues
