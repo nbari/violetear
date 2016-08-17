@@ -12,7 +12,7 @@ build:
 	${GO} build
 
 clean:
-	@rm *.out
+	@rm -rf *.out
 
 test: deps
 test:
