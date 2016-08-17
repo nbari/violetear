@@ -49,6 +49,12 @@ import (
 	"time"
 )
 
+type key int
+
+const ParamsKey key = 0
+
+type Params map[string]interface{}
+
 type Router struct {
 	// Routes to be matched
 	routes *Trie
@@ -134,7 +140,7 @@ func (v *Router) MethodNotAllowed() http.HandlerFunc {
 func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	lw := NewResponseWriter(w)
-	ctx := r.Context()
+	params := make(Params)
 
 	// panic handler
 	defer func() {
@@ -148,13 +154,12 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	setParam := func(k, v string) {
-		param := ctx.Value(k)
-		if param != nil {
-			s := []string{param.(string)}
-			s = append(s, v)
-			ctx = context.WithValue(ctx, k, s)
+		if param, ok := params[k]; !ok {
+			params[k] = v
 		} else {
-			ctx = context.WithValue(ctx, k, v)
+			s := []interface{}{param}
+			s = append(s, v)
+			params[k] = s
 		}
 	}
 
@@ -228,7 +233,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h := match(node, path, leaf)
 
 	// dispatch request
-	h.ServeHTTP(lw, r.WithContext(ctx))
+	h.ServeHTTP(lw, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
 
 	if v.LogRequests {
 		log.Printf("%s [%s] %d %d %v %s",
