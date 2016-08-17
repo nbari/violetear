@@ -439,7 +439,7 @@ func TestContexNamedParamsSlice(t *testing.T) {
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
 
-		params := r.Context().Value(":uuid").([]interface{})
+		params := r.Context().Value(":uuid").([]string)
 
 		expect(t, params[0], "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
 		expect(t, params[1], "12EC2DA8-403D-4C8B-AE39-D011762181A0")

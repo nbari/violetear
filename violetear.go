@@ -150,7 +150,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	setParam := func(k, v string) {
 		param := ctx.Value(k)
 		if param != nil {
-			s := []interface{}{param}
+			s := []string{param.(string)}
 			s = append(s, v)
 			ctx = context.WithValue(ctx, k, s)
 		} else {
