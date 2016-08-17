@@ -1,16 +1,18 @@
-.PHONY: all deps test build cover
+.PHONY: all deps clean test build cover
 
 GO ?= go
 
 all: build test
 
 deps:
-	${GO} get golang.org/x/net/context
 	${GO} get github.com/nbari/violetear/middleware
 
 build: deps
 build:
 	${GO} build
+
+clean:
+	@rm *.out
 
 test: deps
 test:
