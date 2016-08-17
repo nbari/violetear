@@ -1,25 +1,29 @@
 package violetear
 
 import (
-	"github.com/nbari/violetear/middleware"
-	"golang.org/x/net/context"
+	"context"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"runtime"
 	"testing"
+
+	"github.com/nbari/violetear/middleware"
 )
 
 /* Test Helpers */
 func expect(t *testing.T, a interface{}, b interface{}) {
+	_, fn, line, _ := runtime.Caller(1)
 	if a != b {
-		t.Errorf("Expected %v (type %v) - Got %v (type %v)", b, reflect.TypeOf(b), a, reflect.TypeOf(a))
+		t.Fatalf("Expected: %v (type %v)  Got: %v (type %v)  in %s:%d", b, reflect.TypeOf(b), a, reflect.TypeOf(a), fn, line)
 	}
 }
 
 func expectDeepEqual(t *testing.T, a interface{}, b interface{}) {
+	_, fn, line, _ := runtime.Caller(1)
 	if !reflect.DeepEqual(a, b) {
-		t.Errorf("Expected %v (type %v) - Got %v (type %v)", b, reflect.TypeOf(b), a, reflect.TypeOf(a))
+		t.Fatalf("Expected: %v (type %v)  Got: %v (type %v)  in %s:%d", b, reflect.TypeOf(b), a, reflect.TypeOf(a), fn, line)
 	}
 }
 
@@ -352,13 +356,11 @@ func TestContexNamedParams(t *testing.T) {
 	}
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		cw := w.(*ResponseWriter)
-
 		if r.Method == "POST" {
-			expect(t, cw.Get(":uuid"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+			expect(t, r.Context().Value(":uuid"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
 		}
 		if r.Method == "GET" {
-			expect(t, cw.Get("*"), "catch-all-context")
+			expect(t, r.Context().Value("*"), "catch-all-context")
 		}
 		w.Write([]byte("named params"))
 	}
@@ -382,28 +384,25 @@ func TestContexMiddleware(t *testing.T) {
 	// Test middleware with context
 	m1 := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cw := w.(*ResponseWriter)
-			cw.Set("m1", "m1")
-			cw.ctx = context.WithValue(cw.ctx, "key", 1)
-			next.ServeHTTP(w, r)
+			ctx := context.WithValue(r.Context(), "m1", "m1")
+			ctx = context.WithValue(ctx, "key", 1)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 
 	m2 := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cw := w.(*ResponseWriter)
-			cw.Set("m2", "m2")
-			cw.Set("uuid val", cw.Get(":uuid"))
-			next.ServeHTTP(w, r)
+			ctx := context.WithValue(r.Context(), "m2", "m2")
+			ctx = context.WithValue(ctx, "uuid val", r.Context().Value(":uuid"))
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 
 	m3 := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cw := w.(*ResponseWriter)
-			cw.Set("m3", "m3")
-			cw.ctx = context.WithValue(cw.ctx, "ctx", "string")
-			next.ServeHTTP(w, r)
+			ctx := context.WithValue(r.Context(), "m3", "m3")
+			ctx = context.WithValue(ctx, "ctx", "string")
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 
@@ -412,14 +411,13 @@ func TestContexMiddleware(t *testing.T) {
 	}
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		cw := w.(*ResponseWriter)
-		expect(t, cw.Get("m1"), "m1")
-		expect(t, cw.Get("m2"), "m2")
-		expect(t, cw.Get("m3"), "m3")
-		expect(t, cw.Get("uuid val"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
-		expect(t, cw.Get(":uuid"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
-		expect(t, cw.ctx.Value("ctx"), "string")
-		expect(t, cw.ctx.Value("key"), 1)
+		expect(t, r.Context().Value("m1"), "m1")
+		expect(t, r.Context().Value("m2"), "m2")
+		expect(t, r.Context().Value("m3"), "m3")
+		expect(t, r.Context().Value("uuid val"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+		expect(t, r.Context().Value(":uuid"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+		expect(t, r.Context().Value("ctx"), "string")
+		expect(t, r.Context().Value("key"), 1)
 		w.Write([]byte("named params"))
 	}
 
@@ -440,9 +438,8 @@ func TestContexNamedParamsSlice(t *testing.T) {
 	}
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		cw := w.(*ResponseWriter)
 
-		params := cw.Get(":uuid").([]interface{})
+		params := r.Context().Value(":uuid").([]string)
 
 		expect(t, params[0], "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
 		expect(t, params[1], "12EC2DA8-403D-4C8B-AE39-D011762181A0")

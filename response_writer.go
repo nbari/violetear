@@ -1,9 +1,6 @@
 package violetear
 
-import (
-	"golang.org/x/net/context"
-	"net/http"
-)
+import "net/http"
 
 // ResponseWriter wraps the standard http.ResponseWriter allowing for more
 // verbose logging
@@ -11,12 +8,11 @@ type ResponseWriter struct {
 	http.ResponseWriter
 	status int
 	size   int
-	ctx    context.Context
 }
 
 // NewResponseWriter returns ResponseWriter
 func NewResponseWriter(w http.ResponseWriter) *ResponseWriter {
-	return &ResponseWriter{w, 0, 0, context.TODO()}
+	return &ResponseWriter{w, 0, 0}
 }
 
 // Status provides an easy way to retrieve the status code
@@ -52,23 +48,4 @@ func (w *ResponseWriter) Write(data []byte) (int, error) {
 func (w *ResponseWriter) WriteHeader(statusCode int) {
 	w.status = statusCode
 	w.ResponseWriter.WriteHeader(statusCode)
-}
-
-func (w *ResponseWriter) Get(s string) interface{} {
-	return w.ctx.Value(s)
-}
-
-func (w *ResponseWriter) Set(k string, v interface{}) {
-	w.ctx = context.WithValue(w.ctx, k, v)
-}
-
-func (w *ResponseWriter) SetParam(n string, v string) {
-	param := w.Get(n)
-	if param != nil {
-		s := []interface{}{param}
-		s = append(s, v)
-		w.Set(n, s)
-	} else {
-		w.Set(n, v)
-	}
 }

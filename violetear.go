@@ -40,6 +40,7 @@
 package violetear
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -115,7 +116,7 @@ func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods 
 }
 
 // AddRegex adds a ":named" regular expression to the dynamicRoutes
-func (v *Router) AddRegex(name string, regex string) error {
+func (v *Router) AddRegex(name, regex string) error {
 	return v.dynamicRoutes.Set(name, regex)
 }
 
@@ -133,6 +134,7 @@ func (v *Router) MethodNotAllowed() http.HandlerFunc {
 func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	lw := NewResponseWriter(w)
+	ctx := r.Context()
 
 	// panic handler
 	defer func() {
@@ -145,6 +147,17 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
+	setParam := func(k, v string) {
+		param := ctx.Value(k)
+		if param != nil {
+			s := []string{param.(string)}
+			s = append(s, v)
+			ctx = context.WithValue(ctx, k, s)
+		} else {
+			ctx = context.WithValue(ctx, k, v)
+		}
+	}
+
 	// _ path never empty, defaults to ("/")
 	node, path, leaf, _ := v.routes.Get(v.splitPath(r.URL.Path))
 
@@ -152,7 +165,8 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	checkMethod := func(node *Trie, method string) http.Handler {
 		if h, ok := node.Handler[method]; ok {
 			return h
-		} else if h, ok := node.Handler["ALL"]; ok {
+		}
+		if h, ok := node.Handler["ALL"]; ok {
 			return h
 		}
 		if v.NotAllowedHandler != nil {
@@ -174,7 +188,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					rx := v.dynamicRoutes[n.path]
 					if rx.MatchString(path[0]) {
 						// add context named params
-						lw.SetParam(n.path, path[0])
+						setParam(n.path, path[0])
 						path[0] = n.path
 						node, path, leaf, _ := node.Get(path)
 						return match(node, path, leaf)
@@ -191,7 +205,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			for _, n := range node.Node {
 				if n.path == "*" {
 					// add "*" to context
-					lw.SetParam("*", path[0])
+					setParam("*", path[0])
 					return checkMethod(n, r.Method)
 				}
 			}
@@ -214,7 +228,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h := match(node, path, leaf)
 
 	// dispatch request
-	h.ServeHTTP(lw, r)
+	h.ServeHTTP(lw, r.WithContext(ctx))
 
 	if v.LogRequests {
 		log.Printf("%s [%s] %d %d %v %s",

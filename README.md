@@ -491,7 +491,7 @@ func main() {
 }
 ```
 
-## duplicated named parameters
+## Duplicated named parameters
 
 In cases where the same named parameter is used multiple times, example:
 
