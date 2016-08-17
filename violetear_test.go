@@ -2,6 +2,7 @@ package violetear
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"log"
 	"net/http"
@@ -443,19 +444,60 @@ func TestContextNamedParamsSlice(t *testing.T) {
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		params := r.Context().Value(ParamsKey).(Params)
-		uuid := params[":uuid"]
-		fmt.Printf("uuid = %+v\n", len(uuid.(string)))
-		fmt.Printf("uuid = %+v\n", uuid.(string)[0])
-
-		//		expect(t, uuid[0], "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
-		//		expect(t, uuid[1], "12EC2DA8-403D-4C8B-AE39-D011762181A0")
+		uuid := params[":uuid"].([]string)
+		expect(t, uuid[0], "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+		expect(t, uuid[1], "12EC2DA8-403D-4C8B-AE39-D011762181A0")
+		expect(t, uuid[2], "E09533B1-57A8-449B-9A67-4C52C7B41CC1")
 		w.Write([]byte("named params"))
 	}
 
-	router.HandleFunc("/test/:uuid/:uuid", handler)
+	router.HandleFunc("/test/:uuid/:uuid/:uuid/", handler)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/test/A97F0AF3-043D-4376-82BE-CD6C1A524E0E/12EC2DA8-403D-4C8B-AE39-D011762181A0", nil)
+	req, _ := http.NewRequest("GET", "/test/A97F0AF3-043D-4376-82BE-CD6C1A524E0E/12EC2DA8-403D-4C8B-AE39-D011762181A0/E09533B1-57A8-449B-9A67-4C52C7B41CC1", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+}
+
+func TestContextManyNamedParamsSlice(t *testing.T) {
+	genUUID := func() string {
+		b := make([]byte, 16)
+		_, err := rand.Read(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return fmt.Sprintf("%X-%X-%X-%X-%X", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+	}
+
+	var uuids []string
+	request := "/test/"
+	request_handler := "/test/"
+	for i := 0; i <= 10; i++ {
+		uuid := genUUID()
+		uuids = append(uuids, uuid)
+		request += fmt.Sprintf("%s/", uuid)
+		request_handler += ":uuid/"
+	}
+
+	router := New()
+
+	for _, v := range dynamicRoutes {
+		router.AddRegex(v.name, v.regex)
+	}
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		params := r.Context().Value(ParamsKey).(Params)
+		uuid := params[":uuid"].([]string)
+		for i := 0; i <= 10; i++ {
+			expect(t, uuid[i], uuids[i])
+		}
+		w.Write([]byte("named params"))
+	}
+
+	router.HandleFunc(request_handler, handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", request, nil)
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
 }

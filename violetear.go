@@ -157,9 +157,13 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if param, ok := params[k]; !ok {
 			params[k] = v
 		} else {
-			s := []interface{}{param}
-			s = append(s, v)
-			params[k] = s
+			switch param.(type) {
+			case string:
+				param = []string{param.(string), v}
+			case []string:
+				param = append(param.([]string), v)
+			}
+			params[k] = param
 		}
 	}
 
