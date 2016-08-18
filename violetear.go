@@ -153,10 +153,9 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
+	// fill the params map
 	setParam := func(k, v string) {
-		if param, ok := params[k]; !ok {
-			params[k] = v
-		} else {
+		if param, ok := params[k]; ok {
 			switch param.(type) {
 			case string:
 				param = []string{param.(string), v}
@@ -164,6 +163,8 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				param = append(param.([]string), v)
 			}
 			params[k] = param
+		} else {
+			params[k] = v
 		}
 	}
 
@@ -196,7 +197,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				if strings.HasPrefix(n.path, ":") {
 					rx := v.dynamicRoutes[n.path]
 					if rx.MatchString(path[0]) {
-						// add context named params
+						// add param to context
 						setParam(n.path, path[0])
 						path[0] = n.path
 						node, path, leaf, _ := node.Get(path)
