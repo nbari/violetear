@@ -466,15 +466,18 @@ import (
 
 func catchAll(w http.ResponseWriter, r *http.Request) {
     // Get & print the content of named-param *
-    fmt.Fprintf(w, "CatchAll value:, %q", r.Context().Value("*"))
+    params := r.Context().Value(violetear.ParamsKey).(violetear.Params)
+    fmt.Fprintf(w, "CatchAll value:, %q", params["*"])
 }
 
 func handleUUID(w http.ResponseWriter, r *http.Request) {
+    // get router params
+    params := r.Context().Value(violetear.ParamsKey).(violetear.Params)
     // add a key-value pair to the context
     ctx := context.WithValue(r.Context(), "key", "my-value")
     // print current value for :uuid
     fmt.Fprintf(w, "Named parameter: %q, key: %s",
-        ctx.Value(":uuid"),
+        params[":uuid"],
         ctx.Value("key"),
     )
 }
@@ -499,20 +502,14 @@ In cases where the same named parameter is used multiple times, example:
 
 An slice is created, for getting the values you need to do something like:
 
-        params := r.Context().Value(":uuid").([]string)
+        params := r.Context().Value(violetear.ParamsKey).(violetear.Params)
+        uuid := params[":uuid"].([]string)
+
+> Notice the ``:`` prefix when getting the named_parameters
 
 After this you can access the slice like normal:
 
-        fmt.Println(params[0], params[1])
-
-
-Notice the ``:`` prefix when getting the named_parameters, this is because the
-same context ``ctx`` is used among all the requests, therefore if you want to
-create a ``key-value`` pair with something like ``uuid`` it doesn't overwrite the
-``:uuid`` named parameter:
-
-    r.Context().Value(":uuid") get the named parameter set by the router.
-    r.Context().Value("uuid") get a custom key named ``uuid``
+        fmt.Println(uuid[0], uuid[1])
 
 
 ## Only for go < 1.7

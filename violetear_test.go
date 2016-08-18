@@ -2,6 +2,8 @@ package violetear
 
 import (
 	"context"
+	"crypto/rand"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -348,7 +350,7 @@ func TestHandleFuncMethods(t *testing.T) {
 	expect(t, w.Code, 405)
 }
 
-func TestContexNamedParams(t *testing.T) {
+func TestContextNamedParams(t *testing.T) {
 	router := New()
 
 	for _, v := range dynamicRoutes {
@@ -356,11 +358,12 @@ func TestContexNamedParams(t *testing.T) {
 	}
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
+		params := r.Context().Value(ParamsKey).(Params)
 		if r.Method == "POST" {
-			expect(t, r.Context().Value(":uuid"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+			expect(t, params[":uuid"], "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
 		}
 		if r.Method == "GET" {
-			expect(t, r.Context().Value("*"), "catch-all-context")
+			expect(t, params["*"], "catch-all-context")
 		}
 		w.Write([]byte("named params"))
 	}
@@ -378,7 +381,7 @@ func TestContexNamedParams(t *testing.T) {
 	expect(t, w.Code, 200)
 }
 
-func TestContexMiddleware(t *testing.T) {
+func TestContextMiddleware(t *testing.T) {
 	router := New()
 
 	// Test middleware with context
@@ -392,8 +395,9 @@ func TestContexMiddleware(t *testing.T) {
 
 	m2 := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			params := r.Context().Value(ParamsKey).(Params)
 			ctx := context.WithValue(r.Context(), "m2", "m2")
-			ctx = context.WithValue(ctx, "uuid val", r.Context().Value(":uuid"))
+			ctx = context.WithValue(ctx, "uuid val", params[":uuid"])
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -411,11 +415,12 @@ func TestContexMiddleware(t *testing.T) {
 	}
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
+		params := r.Context().Value(ParamsKey).(Params)
 		expect(t, r.Context().Value("m1"), "m1")
 		expect(t, r.Context().Value("m2"), "m2")
 		expect(t, r.Context().Value("m3"), "m3")
 		expect(t, r.Context().Value("uuid val"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
-		expect(t, r.Context().Value(":uuid"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+		expect(t, params[":uuid"], "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
 		expect(t, r.Context().Value("ctx"), "string")
 		expect(t, r.Context().Value("key"), 1)
 		w.Write([]byte("named params"))
@@ -430,7 +435,7 @@ func TestContexMiddleware(t *testing.T) {
 	expect(t, w.Code, 200)
 }
 
-func TestContexNamedParamsSlice(t *testing.T) {
+func TestContextNamedParamsSlice(t *testing.T) {
 	router := New()
 
 	for _, v := range dynamicRoutes {
@@ -438,18 +443,61 @@ func TestContexNamedParamsSlice(t *testing.T) {
 	}
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
-
-		params := r.Context().Value(":uuid").([]string)
-
-		expect(t, params[0], "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
-		expect(t, params[1], "12EC2DA8-403D-4C8B-AE39-D011762181A0")
+		params := r.Context().Value(ParamsKey).(Params)
+		uuid := params[":uuid"].([]string)
+		expect(t, uuid[0], "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+		expect(t, uuid[1], "12EC2DA8-403D-4C8B-AE39-D011762181A0")
+		expect(t, uuid[2], "E09533B1-57A8-449B-9A67-4C52C7B41CC1")
 		w.Write([]byte("named params"))
 	}
 
-	router.HandleFunc("/test/:uuid/:uuid", handler)
+	router.HandleFunc("/test/:uuid/:uuid/:uuid/", handler)
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/test/A97F0AF3-043D-4376-82BE-CD6C1A524E0E/12EC2DA8-403D-4C8B-AE39-D011762181A0", nil)
+	req, _ := http.NewRequest("GET", "/test/A97F0AF3-043D-4376-82BE-CD6C1A524E0E/12EC2DA8-403D-4C8B-AE39-D011762181A0/E09533B1-57A8-449B-9A67-4C52C7B41CC1", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+}
+
+func TestContextManyNamedParamsSlice(t *testing.T) {
+	genUUID := func() string {
+		b := make([]byte, 16)
+		_, err := rand.Read(b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return fmt.Sprintf("%X-%X-%X-%X-%X", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+	}
+
+	var uuids []string
+	request := "/test/"
+	request_handler := "/test/"
+	for i := 0; i <= 10; i++ {
+		uuid := genUUID()
+		uuids = append(uuids, uuid)
+		request += fmt.Sprintf("%s/", uuid)
+		request_handler += ":uuid/"
+	}
+
+	router := New()
+
+	for _, v := range dynamicRoutes {
+		router.AddRegex(v.name, v.regex)
+	}
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		params := r.Context().Value(ParamsKey).(Params)
+		uuid := params[":uuid"].([]string)
+		for i := 0; i <= 10; i++ {
+			expect(t, uuid[i], uuids[i])
+		}
+		w.Write([]byte("named params"))
+	}
+
+	router.HandleFunc(request_handler, handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", request, nil)
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
 }

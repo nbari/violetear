@@ -49,6 +49,12 @@ import (
 	"time"
 )
 
+type key int
+
+const ParamsKey key = 0
+
+type Params map[string]interface{}
+
 type Router struct {
 	// Routes to be matched
 	routes *Trie
@@ -134,7 +140,7 @@ func (v *Router) MethodNotAllowed() http.HandlerFunc {
 func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	lw := NewResponseWriter(w)
-	ctx := r.Context()
+	params := make(Params)
 
 	// panic handler
 	defer func() {
@@ -147,14 +153,18 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
+	// fill the params map
 	setParam := func(k, v string) {
-		param := ctx.Value(k)
-		if param != nil {
-			s := []string{param.(string)}
-			s = append(s, v)
-			ctx = context.WithValue(ctx, k, s)
+		if param, ok := params[k]; ok {
+			switch param.(type) {
+			case string:
+				param = []string{param.(string), v}
+			case []string:
+				param = append(param.([]string), v)
+			}
+			params[k] = param
 		} else {
-			ctx = context.WithValue(ctx, k, v)
+			params[k] = v
 		}
 	}
 
@@ -187,7 +197,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				if strings.HasPrefix(n.path, ":") {
 					rx := v.dynamicRoutes[n.path]
 					if rx.MatchString(path[0]) {
-						// add context named params
+						// add param to context
 						setParam(n.path, path[0])
 						path[0] = n.path
 						node, path, leaf, _ := node.Get(path)
@@ -228,7 +238,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h := match(node, path, leaf)
 
 	// dispatch request
-	h.ServeHTTP(lw, r.WithContext(ctx))
+	h.ServeHTTP(lw, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
 
 	if v.LogRequests {
 		log.Printf("%s [%s] %d %d %v %s",
