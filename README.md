@@ -125,6 +125,7 @@ func handleUUID(w http.ResponseWriter, r *http.Request) {
 func main() {
     router := violetear.New()
     router.LogRequests = true
+    router.VerboseStartup = false
     router.RequestID = "Request-ID"
 
     router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
