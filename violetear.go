@@ -77,6 +77,9 @@ type Router struct {
 
 	// RequestID name of the header to use or create.
 	RequestID string
+
+	// Verbose startup
+	VerboseStartup bool
 }
 
 var split_path_rx = regexp.MustCompile(`[^/ ]+`)
@@ -84,8 +87,9 @@ var split_path_rx = regexp.MustCompile(`[^/ ]+`)
 // New returns a new initialized router.
 func New() *Router {
 	return &Router{
-		routes:        NewTrie(),
-		dynamicRoutes: make(dynamicSet),
+		routes:         NewTrie(),
+		dynamicRoutes:  make(dynamicSet),
+		VerboseStartup: false,
 	}
 }
 
@@ -107,9 +111,9 @@ func (v *Router) Handle(path string, handler http.Handler, http_methods ...strin
 	if len(http_methods) > 0 {
 		methods = http_methods[0]
 	}
-
-	log.Printf("Adding path: %s [%s]", path, methods)
-
+	if v.VerboseStartup {
+		log.Printf("Adding path: %s [%s]", path, methods)
+	}
 	if err := v.routes.Set(path_parts, handler, methods); err != nil {
 		return err
 	}
