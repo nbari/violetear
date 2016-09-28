@@ -1,6 +1,7 @@
 [![GoDoc](https://godoc.org/github.com/nbari/violetear?status.svg)](https://godoc.org/github.com/nbari/violetear)
 [![Build Status](https://travis-ci.org/nbari/violetear.svg?branch=master)](https://travis-ci.org/nbari/violetear)
 [![Coverage Status](https://coveralls.io/repos/nbari/violetear/badge.svg?branch=develop&service=github)](https://coveralls.io/github/nbari/violetear?branch=develop)
+[![Go Report Card](https://goreportcard.com/badge/github.com/nbari/violetear)](https://goreportcard.com/report/github.com/nbari/violetear)
 
 # violetear
 Go HTTP router
