@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// Trie data structure
 type Trie struct {
 	Handler     map[string]http.Handler
 	HasCatchall bool

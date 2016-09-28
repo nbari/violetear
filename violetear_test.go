@@ -319,15 +319,15 @@ func TestRequestIdCreate(t *testing.T) {
 func TestHandleFuncMethods(t *testing.T) {
 	router := New()
 
-	get_handler := func(w http.ResponseWriter, r *http.Request) {
+	getHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("I handle GET"))
 	}
-	post_handler := func(w http.ResponseWriter, r *http.Request) {
+	postHandler := func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("I handle POST"))
 	}
 
-	router.HandleFunc("/spine", get_handler, "GET")
-	router.HandleFunc("/spine", post_handler, "POST")
+	router.HandleFunc("/spine", getHandler, "GET")
+	router.HandleFunc("/spine", postHandler, "POST")
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("PUT", "/spine", nil)
@@ -471,12 +471,12 @@ func TestContextManyNamedParamsSlice(t *testing.T) {
 
 	var uuids []string
 	request := "/test/"
-	request_handler := "/test/"
+	requestHandler := "/test/"
 	for i := 0; i <= 10; i++ {
 		uuid := genUUID()
 		uuids = append(uuids, uuid)
 		request += fmt.Sprintf("%s/", uuid)
-		request_handler += ":uuid/"
+		requestHandler += ":uuid/"
 	}
 
 	router := New()
@@ -494,7 +494,7 @@ func TestContextManyNamedParamsSlice(t *testing.T) {
 		w.Write([]byte("named params"))
 	}
 
-	router.HandleFunc(request_handler, handler)
+	router.HandleFunc(requestHandler, handler)
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", request, nil)
