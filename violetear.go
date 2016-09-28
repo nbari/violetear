@@ -1,4 +1,4 @@
-// HTTP router
+// Package violetear - HTTP router
 //
 // Basic example:
 //
@@ -51,10 +51,13 @@ import (
 
 type key int
 
+// ParamsKey used for the context
 const ParamsKey key = 0
 
+// Params string/interface map used with context
 type Params map[string]interface{}
 
+// Router struct
 type Router struct {
 	// Routes to be matched
 	routes *Trie
@@ -77,24 +80,28 @@ type Router struct {
 
 	// RequestID name of the header to use or create.
 	RequestID string
+
+	// Verbose
+	Verbose bool
 }
 
-var split_path_rx = regexp.MustCompile(`[^/ ]+`)
+var splitPathRx = regexp.MustCompile(`[^/ ]+`)
 
 // New returns a new initialized router.
 func New() *Router {
 	return &Router{
 		routes:        NewTrie(),
 		dynamicRoutes: make(dynamicSet),
+		Verbose:       true,
 	}
 }
 
 // Handle registers the handler for the given pattern (path, http.Handler, methods).
-func (v *Router) Handle(path string, handler http.Handler, http_methods ...string) error {
-	path_parts := v.splitPath(path)
+func (v *Router) Handle(path string, handler http.Handler, httpMethods ...string) error {
+	pathParts := v.splitPath(path)
 
 	// search for dynamic routes
-	for _, p := range path_parts {
+	for _, p := range pathParts {
 		if strings.HasPrefix(p, ":") {
 			if _, ok := v.dynamicRoutes[p]; !ok {
 				return fmt.Errorf("[%s] not found, need to add it using AddRegex(\"%s\", `your regex`)", p, p)
@@ -104,21 +111,23 @@ func (v *Router) Handle(path string, handler http.Handler, http_methods ...strin
 
 	// if no methods, accept ALL
 	methods := "ALL"
-	if len(http_methods) > 0 {
-		methods = http_methods[0]
+	if len(httpMethods) > 0 {
+		methods = httpMethods[0]
 	}
 
-	log.Printf("Adding path: %s [%s]", path, methods)
+	if v.Verbose {
+		log.Printf("Adding path: %s [%s]", path, methods)
+	}
 
-	if err := v.routes.Set(path_parts, handler, methods); err != nil {
+	if err := v.routes.Set(pathParts, handler, methods); err != nil {
 		return err
 	}
 	return nil
 }
 
 // HandleFunc add a route to the router (path, http.HandlerFunc, methods)
-func (v *Router) HandleFunc(path string, handler http.HandlerFunc, http_methods ...string) error {
-	return v.Handle(path, handler, http_methods...)
+func (v *Router) HandleFunc(path string, handler http.HandlerFunc, httpMethods ...string) error {
+	return v.Handle(path, handler, httpMethods...)
 }
 
 // AddRegex adds a ":named" regular expression to the dynamicRoutes
@@ -254,12 +263,12 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // splitPath returns an slice of the path
 func (v *Router) splitPath(p string) []string {
-	path_parts := split_path_rx.FindAllString(p, -1)
+	pathParts := splitPathRx.FindAllString(p, -1)
 
 	// root (empty slice)
-	if len(path_parts) == 0 {
-		path_parts = append(path_parts, "/")
+	if len(pathParts) == 0 {
+		pathParts = append(pathParts, "/")
 	}
 
-	return path_parts
+	return pathParts
 }

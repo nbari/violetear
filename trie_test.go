@@ -7,11 +7,11 @@ import (
 
 func TestTrieNew(t *testing.T) {
 	trie := NewTrie()
-	my_trie := &Trie{
+	myTrie := &Trie{
 		Node:    make([]*Trie, 0),
 		Handler: map[string]http.Handler{},
 	}
-	expectDeepEqual(t, trie, my_trie)
+	expectDeepEqual(t, trie, myTrie)
 }
 
 func TestTrieSetEmpty(t *testing.T) {
