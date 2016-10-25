@@ -148,6 +148,8 @@ $ go run test.go
 2015/10/22 17:14:18 Adding path: /:uuid [GET,HEAD]
 ```
 
+Using ``router.Verbose = false`` will omit printing the paths.
+
 > test.go contains the code show above
 
 Testing using curl or [http](https://github.com/jkbrzt/httpie)
