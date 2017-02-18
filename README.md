@@ -12,7 +12,7 @@ Go HTTP router
 * Easy middleware compatibility so that it satisfies the http.Handler interface.
 * Common context between middleware.
 * Trace Request-ID per request.
-* HTTP/2 [Push Example](https://gist.github.com/nbari/e19f195c233c92061e27f5beaaae45a3)
+* HTTP/2 native support [Push Example](https://gist.github.com/nbari/e19f195c233c92061e27f5beaaae45a3)
 
 Package [GoDoc](https://godoc.org/github.com/nbari/violetear)
 
