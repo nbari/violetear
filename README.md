@@ -15,6 +15,8 @@ Go HTTP router
 
 Package [GoDoc](https://godoc.org/github.com/nbari/violetear)
 
+HTTP/2 Example: https://gist.github.com/nbari/e19f195c233c92061e27f5beaaae45a3
+
 How it works
 ------------
 
