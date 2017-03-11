@@ -6,6 +6,8 @@
 # violetear
 Go HTTP router
 
+http://violetear.org
+
 ### Design Goals
 * Keep it simple and small, avoiding extra complexity at all cost. [KISS](https://en.wikipedia.org/wiki/KISS_principle)
 * Support for static and dynamic routing.
@@ -13,6 +15,7 @@ Go HTTP router
 * Common context between middleware.
 * Trace Request-ID per request.
 * HTTP/2 native support [Push Example](https://gist.github.com/nbari/e19f195c233c92061e27f5beaaae45a3)
+* Versioning based on Accept header `application/vnd.*`
 
 Package [GoDoc](https://godoc.org/github.com/nbari/violetear)
 
