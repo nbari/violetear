@@ -7,6 +7,9 @@ all: build test
 build:
 	${GO} build
 
+clean:
+	@rm -rf *.out
+
 test:
 	${GO} test -v
 
