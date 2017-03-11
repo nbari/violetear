@@ -13,6 +13,7 @@ Go HTTP router
 * Common context between middleware.
 * Trace Request-ID per request.
 * HTTP/2 native support [Push Example](https://gist.github.com/nbari/e19f195c233c92061e27f5beaaae45a3)
+* Versioning based on Accept header `application/vnd.*`
 
 Package [GoDoc](https://godoc.org/github.com/nbari/violetear)
 
