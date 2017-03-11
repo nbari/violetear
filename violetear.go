@@ -53,8 +53,8 @@ type key int
 
 // ParamsKey used for the context
 const (
-	ParamsKey        key = 0
-	versionSeparator     = "application/vnd."
+	ParamsKey     key = 0
+	versionHeader     = "application/vnd."
 )
 
 // Params string/interface map used with context
@@ -187,8 +187,8 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// set version based on the value of "Accept: application/vnd.*"
 	version := r.Header.Get("Accept")
-	if i := strings.LastIndex(version, versionSeparator); i != -1 {
-		version = version[len(versionSeparator)+i:]
+	if i := strings.LastIndex(version, versionHeader); i != -1 {
+		version = version[len(versionHeader)+i:]
 	} else {
 		version = ""
 	}
