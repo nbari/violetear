@@ -501,3 +501,111 @@ func TestContextManyNamedParamsSlice(t *testing.T) {
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
 }
+
+func TestVersioning(t *testing.T) {
+	router := New()
+	for _, v := range dynamicRoutes {
+		router.AddRegex(v.name, v.regex)
+	}
+	getHandler := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("I handle GET"))
+	}
+	getHandlerv2 := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("I handle GET v2"))
+	}
+	getIP := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("ip"))
+	}
+	getIPv2 := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("ip v2"))
+	}
+	getUUID := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("uuid"))
+	}
+	getUUIDv2 := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("uuid v2"))
+	}
+	getCatch := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("*"))
+	}
+	getCatchv2 := func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("* v2"))
+	}
+	router.HandleFunc("/", getHandler, "GET")
+	router.HandleFunc("/#violetear.v2", getHandlerv2, "GET")
+	router.HandleFunc("/:ip", getIP, "GET")
+	router.HandleFunc("/:ip#violetear.v2", getIPv2, "GET")
+	router.HandleFunc("/:uuid", getUUID, "GET")
+	router.HandleFunc("/:uuid#violetear.v2", getUUIDv2, "GET")
+	router.HandleFunc("/catch/*", getCatch, "GET")
+	router.HandleFunc("/catch/*#violetear.v2", getCatchv2, "GET")
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Body.String(), "I handle GET")
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/", nil)
+	req.Header.Set("Accept", "application/vnd.violetear.XX")
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 404)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/", nil)
+	req.Header.Set("Accept", "application/vnd.violetear.v2")
+	router.ServeHTTP(w, req)
+	expect(t, w.Body.String(), "I handle GET v2")
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/127.0.0.1", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Body.String(), "ip")
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/127.0.0.1", nil)
+	req.Header.Set("Accept", "application/vnd.violetear.XX")
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 404)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/127.0.0.1", nil)
+	req.Header.Set("Accept", "application/vnd.violetear.v2")
+	router.ServeHTTP(w, req)
+	expect(t, w.Body.String(), "ip v2")
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/AA4C820E-4D9D-4385-B796-77D12C825306", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Body.String(), "uuid")
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/AA4C820E-4D9D-4385-B796-77D12C825306", nil)
+	req.Header.Set("Accept", "application/vnd.violetear.XX")
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 404)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/AA4C820E-4D9D-4385-B796-77D12C825306", nil)
+	req.Header.Set("Accept", "application/vnd.violetear.v2")
+	router.ServeHTTP(w, req)
+	expect(t, w.Body.String(), "uuid v2")
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/catch/any", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Body.String(), "*")
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/catch/any", nil)
+	req.Header.Set("Accept", "application/vnd.violetear.XX")
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 404)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/catch/any", nil)
+	req.Header.Set("Accept", "application/vnd.violetear.v2")
+	router.ServeHTTP(w, req)
+	expect(t, w.Body.String(), "* v2")
+
+}

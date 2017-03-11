@@ -28,6 +28,9 @@ func TestTrieSet(t *testing.T) {
 	err := trie.Set([]string{"/"}, nil, "ALL", "")
 	expect(t, err, nil)
 
+	err = trie.Set([]string{"/"}, nil, "ALL", "v3")
+	expect(t, err, nil)
+
 	err = trie.Set([]string{"/"}, nil, "ALL", "")
 	expect(t, err, nil)
 
@@ -66,20 +69,31 @@ func TestTrieSet(t *testing.T) {
 
 	err = trie.Set([]string{"root", "alpha", "beta", "gamma"}, nil, "ALL", "")
 	expect(t, err, nil)
+
+	err = trie.Set([]string{"root", "alpha", "beta", "gamma"}, nil, "ALL", "v3")
+	expect(t, err, nil)
 }
 
 func TestTrieGet(t *testing.T) {
 	trie := NewTrie()
 	err := trie.Set([]string{"*"}, nil, "ALL", "")
 	expect(t, err, nil)
+	err = trie.Set([]string{"*"}, nil, "ALL", "v3")
+	expect(t, err, nil)
 
 	err = trie.Set([]string{":dynamic"}, nil, "ALL", "")
+	expect(t, err, nil)
+	err = trie.Set([]string{":dynamic"}, nil, "ALL", "v3")
 	expect(t, err, nil)
 
 	err = trie.Set([]string{"root"}, nil, "ALL", "")
 	expect(t, err, nil)
+	err = trie.Set([]string{"root"}, nil, "ALL", "v3")
+	expect(t, err, nil)
 
 	err = trie.Set([]string{"root", "*"}, nil, "ALL", "")
+	expect(t, err, nil)
+	err = trie.Set([]string{"root", "*"}, nil, "ALL", "v3")
 	expect(t, err, nil)
 
 	err = trie.Set([]string{"root", "alpha", "*"}, nil, "ALL", "")
@@ -106,6 +120,14 @@ func TestTrieGet(t *testing.T) {
 	expect(t, err, nil)
 	expectDeepEqual(t, p, []string{"*"})
 	expect(t, l, true)
+	n, p, l, err = trie.Get([]string{"*"}, "v5")
+	expect(t, err, nil)
+	n, p, l, err = trie.Get([]string{"*"}, "v4")
+	expect(t, err, nil)
+	n, p, l, err = trie.Get([]string{"*"}, "v3")
+	expect(t, err, nil)
+	expectDeepEqual(t, p, []string{"*"})
+	expect(t, l, true)
 
 	n, p, l, err = trie.Get([]string{"not_found"}, "")
 	expect(t, err, nil)
@@ -117,12 +139,22 @@ func TestTrieGet(t *testing.T) {
 	expect(t, err, nil)
 	expectDeepEqual(t, p, []string{":dynamic"})
 	expect(t, l, true)
+	n, p, l, err = trie.Get([]string{":dynamic"}, "v3")
+	expect(t, err, nil)
+	expectDeepEqual(t, p, []string{":dynamic"})
+	expect(t, l, true)
 
 	n, p, l, err = trie.Get([]string{"root"}, "")
 	expect(t, err, nil)
 	expectDeepEqual(t, p, []string{"root"})
 	expect(t, l, true)
 	expect(t, len(n.Node), 4)
+
+	n, p, l, err = trie.Get([]string{"root", "v3"}, "v3")
+	expect(t, err, nil)
+	expectDeepEqual(t, p, []string{"v3"})
+	expect(t, l, false)
+	expect(t, len(n.Node), 1)
 
 	n, p, l, err = trie.Get([]string{"root", "alpha"}, "")
 	expect(t, err, nil)

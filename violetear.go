@@ -124,7 +124,7 @@ func (v *Router) Handle(path string, handler http.Handler, httpMethods ...string
 	}
 
 	if v.Verbose {
-		log.Printf("Adding path: %s [%s]", path, methods)
+		log.Printf("Adding path: %s [%s] %s", path, methods, version)
 	}
 
 	if err := v.routes.Set(pathParts, handler, methods, version); err != nil {
