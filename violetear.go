@@ -52,7 +52,10 @@ import (
 type key int
 
 // ParamsKey used for the context
-const ParamsKey key = 0
+const (
+	ParamsKey     key = 0
+	versionHeader     = "application/vnd."
+)
 
 // Params string/interface map used with context
 type Params map[string]interface{}
@@ -98,6 +101,11 @@ func New() *Router {
 
 // Handle registers the handler for the given pattern (path, http.Handler, methods).
 func (v *Router) Handle(path string, handler http.Handler, httpMethods ...string) error {
+	var version string
+	if i := strings.Index(path, "#"); i != -1 {
+		version = path[i+1:]
+		path = path[:i]
+	}
 	pathParts := v.splitPath(path)
 
 	// search for dynamic routes
@@ -119,7 +127,7 @@ func (v *Router) Handle(path string, handler http.Handler, httpMethods ...string
 		log.Printf("Adding path: %s [%s]", path, methods)
 	}
 
-	if err := v.routes.Set(pathParts, handler, methods); err != nil {
+	if err := v.routes.Set(pathParts, handler, methods, version); err != nil {
 		return err
 	}
 	return nil
@@ -177,8 +185,16 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// set version based on the value of "Accept: application/vnd.*"
+	version := r.Header.Get("Accept")
+	if i := strings.LastIndex(version, versionHeader); i != -1 {
+		version = version[len(versionHeader)+i:]
+	} else {
+		version = ""
+	}
+
 	// _ path never empty, defaults to ("/")
-	node, path, leaf, _ := v.routes.Get(v.splitPath(r.URL.Path))
+	node, path, leaf, _ := v.routes.Get(v.splitPath(r.URL.Path), version)
 
 	// checkMethod check if method is allowed or not
 	checkMethod := func(node *Trie, method string) http.Handler {
@@ -209,7 +225,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 						// add param to context
 						setParam(n.path, path[0])
 						path[0] = n.path
-						node, path, leaf, _ := node.Get(path)
+						node, path, leaf, _ := node.Get(path, version)
 						return match(node, path, leaf)
 					}
 				}

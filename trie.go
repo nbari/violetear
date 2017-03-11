@@ -13,6 +13,7 @@ type Trie struct {
 	HasRegex    bool
 	Node        []*Trie
 	path        string
+	version     string
 }
 
 // NewTrie returns a new Trie
@@ -24,9 +25,9 @@ func NewTrie() *Trie {
 }
 
 // contains check if path exists on node
-func (t *Trie) contains(path string) (*Trie, bool) {
+func (t *Trie) contains(path, version string) (*Trie, bool) {
 	for _, n := range t.Node {
-		if n.path == path {
+		if n.path == path && n.version == version {
 			return n, true
 		}
 	}
@@ -34,7 +35,7 @@ func (t *Trie) contains(path string) (*Trie, bool) {
 }
 
 // Set adds a node (url part) to the Trie
-func (t *Trie) Set(path []string, handler http.Handler, method string) error {
+func (t *Trie) Set(path []string, handler http.Handler, method, version string) error {
 	if len(path) == 0 {
 		return errors.New("path cannot be empty")
 	}
@@ -42,11 +43,12 @@ func (t *Trie) Set(path []string, handler http.Handler, method string) error {
 	key := path[0]
 	newpath := path[1:]
 
-	val, ok := t.contains(key)
+	val, ok := t.contains(key, version)
 
 	if !ok {
 		val = NewTrie()
 		val.path = key
+		val.version = version
 		t.Node = append(t.Node, val)
 
 		// check for regex ":"
@@ -72,11 +74,11 @@ func (t *Trie) Set(path []string, handler http.Handler, method string) error {
 		return errors.New("Catch-all \"*\" must always be the final path element.")
 	}
 
-	return val.Set(newpath, handler, method)
+	return val.Set(newpath, handler, method, version)
 }
 
 // Get returns a node
-func (t *Trie) Get(path []string) (trie *Trie, p []string, leaf bool, err error) {
+func (t *Trie) Get(path []string, version string) (trie *Trie, p []string, leaf bool, err error) {
 	if len(path) == 0 {
 		err = errors.New("path cannot be empty")
 		return
@@ -85,11 +87,11 @@ func (t *Trie) Get(path []string) (trie *Trie, p []string, leaf bool, err error)
 	key := path[0]
 	newpath := path[1:]
 
-	if val, ok := t.contains(key); ok {
+	if val, ok := t.contains(key, version); ok {
 		if len(newpath) == 0 {
 			return val, path, true, nil
 		}
-		return val.Get(newpath)
+		return val.Get(newpath, version)
 	}
 
 	return t, path, false, nil
