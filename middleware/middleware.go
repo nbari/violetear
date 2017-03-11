@@ -1,4 +1,4 @@
-// HTTP middleware
+// Package middleware - HTTP middleware
 //
 // https://github.com/justinas/alice
 //

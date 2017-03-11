@@ -65,7 +65,7 @@ type Router struct {
 	// Routes to be matched
 	routes *Trie
 
-	// dynamicRoutes map of dynamic routes and regular expresions
+	// dynamicRoutes map of dynamic routes and regular expressions
 	dynamicRoutes dynamicSet
 
 	// LogRequests yes or no
