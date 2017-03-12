@@ -153,7 +153,7 @@ func (v *Router) MethodNotAllowed() http.HandlerFunc {
 	})
 }
 
-// ServerHTTP dispatches the handler registered in the matched path
+// ServeHTTP dispatches the handler registered in the matched path
 func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	lw := NewResponseWriter(w)
