@@ -607,5 +607,21 @@ func TestVersioning(t *testing.T) {
 	req.Header.Set("Accept", "application/vnd.violetear.v2")
 	router.ServeHTTP(w, req)
 	expect(t, w.Body.String(), "* v2")
+}
 
+func TestGetParam(t *testing.T) {
+	router := New()
+	router.AddRegex(":test_param", `^\w+$`)
+
+	expectedParam := "test_param_name"
+
+	testHandler := func(_ http.ResponseWriter, r *http.Request) {
+		obtainedParam := GetParam("test_param", r)
+		expect(t, obtainedParam, expectedParam)
+	}
+
+	router.HandleFunc("/tests/:test_param", testHandler, "GET")
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/tests/"+expectedParam, nil)
+	router.ServeHTTP(w, req)
 }

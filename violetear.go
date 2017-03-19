@@ -143,6 +143,23 @@ func (v *Router) AddRegex(name, regex string) error {
 	return v.dynamicRoutes.Set(name, regex)
 }
 
+// GetParam returns a value for the parameter set in path
+// and described via a regexp on Router initialization
+// The method is using the context in order to retrieve the value,
+// thus is only applicable for go >= 1.7
+func GetParam(name string, r *http.Request) string {
+	params, ok := r.Context().Value(ParamsKey).(Params)
+	if !ok {
+		return ""
+	}
+
+	if param := params[":"+name]; param != nil {
+		return param.(string)
+	}
+
+	return ""
+}
+
 // MethodNotAllowed default handler for 405
 func (v *Router) MethodNotAllowed() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
