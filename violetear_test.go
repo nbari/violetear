@@ -29,6 +29,15 @@ func expectDeepEqual(t *testing.T, a interface{}, b interface{}) {
 	}
 }
 
+func genUUID() string {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%X-%X-%X-%X-%X", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+}
+
 type testRouter struct {
 	path     string
 	methods  string
@@ -460,15 +469,6 @@ func TestContextNamedParamsSlice(t *testing.T) {
 }
 
 func TestContextManyNamedParamsSlice(t *testing.T) {
-	genUUID := func() string {
-		b := make([]byte, 16)
-		_, err := rand.Read(b)
-		if err != nil {
-			t.Fatal(err)
-		}
-		return fmt.Sprintf("%X-%X-%X-%X-%X", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
-	}
-
 	var uuids []string
 	request := "/test/"
 	requestHandler := "/test/"
@@ -607,5 +607,144 @@ func TestVersioning(t *testing.T) {
 	req.Header.Set("Accept", "application/vnd.violetear.v2")
 	router.ServeHTTP(w, req)
 	expect(t, w.Body.String(), "* v2")
+}
 
+func TestGetParam(t *testing.T) {
+	testCases := []struct {
+		path          string
+		requestPath   string
+		param         string
+		expectedParam string
+		index         int
+	}{
+		{
+			path:          "/tests/:test_param",
+			requestPath:   "/tests/abc",
+			param:         "test_param",
+			expectedParam: "abc",
+		},
+		{
+			path:          "/other_test",
+			requestPath:   "/other_test",
+			param:         "foo",
+			expectedParam: "",
+		},
+		{
+			path:          "/other_test",
+			requestPath:   "/other_test",
+			param:         "",
+			expectedParam: "",
+		},
+		{
+			path:          "/test/:ip",
+			requestPath:   "/test/127.0.0.1",
+			param:         "ip",
+			expectedParam: "127.0.0.1",
+		},
+		{
+			path:          "/test/:ip",
+			requestPath:   "/test/127.0.0.1",
+			param:         "ip",
+			expectedParam: "127.0.0.1",
+			index:         3,
+		},
+		{
+			path:          "/:uuid",
+			requestPath:   "/78F204D2-26D9-409F-BE81-2E5D061E1FA1",
+			param:         "uuid",
+			expectedParam: "78F204D2-26D9-409F-BE81-2E5D061E1FA1",
+		},
+		{
+			path:          "/test/:uuid",
+			requestPath:   "/test/78F204D2-26D9-409F-BE81-2E5D061E1FA1",
+			param:         "uuid",
+			expectedParam: "78F204D2-26D9-409F-BE81-2E5D061E1FA1",
+		},
+		{
+			path:          "/test/:uuid/:uuid",
+			requestPath:   "/test/78F204D2-26D9-409F-BE81-2E5D061E1FA1/33A7B724-1498-4A5A-B29B-AD4E31824234",
+			param:         "uuid",
+			expectedParam: "78F204D2-26D9-409F-BE81-2E5D061E1FA1",
+			index:         0,
+		},
+		{
+			path:          "/test/:uuid/:uuid",
+			requestPath:   "/test/78F204D2-26D9-409F-BE81-2E5D061E1FA1/33A7B724-1498-4A5A-B29B-AD4E31824234",
+			param:         "uuid",
+			expectedParam: "33A7B724-1498-4A5A-B29B-AD4E31824234",
+			index:         1,
+		},
+		{
+			path:          "/test/:uuid/:uuid",
+			requestPath:   "/test/78F204D2-26D9-409F-BE81-2E5D061E1FA1/33A7B724-1498-4A5A-B29B-AD4E31824234",
+			param:         "uuid",
+			expectedParam: "",
+			index:         2,
+		},
+		{
+			path:          "/test/:uuid/:uuid",
+			requestPath:   "/test/78F204D2-26D9-409F-BE81-2E5D061E1FA1/33A7B724-1498-4A5A-B29B-AD4E31824234",
+			param:         "uuid",
+			expectedParam: "",
+			index:         3,
+		},
+	}
+
+	router := New()
+	for _, v := range dynamicRoutes {
+		router.AddRegex(v.name, v.regex)
+	}
+	router.AddRegex(":test_param", `^\w+$`)
+
+	var (
+		w             *httptest.ResponseRecorder
+		obtainedParam string
+	)
+
+	for _, v := range testCases {
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
+			if v.index > 0 {
+				obtainedParam = GetParam(v.param, r, v.index)
+			} else {
+				obtainedParam = GetParam(v.param, r)
+			}
+			expect(t, obtainedParam, v.expectedParam)
+		}
+		router.HandleFunc(v.path, testHandler, "GET")
+		w = httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", v.requestPath, nil)
+		router.ServeHTTP(w, req)
+	}
+}
+
+func TestGetParamDuplicates(t *testing.T) {
+	var uuids []string
+	request := "/test/"
+	requestHandler := "/test/"
+	for i := 0; i <= 10; i++ {
+		uuid := genUUID()
+		uuids = append(uuids, uuid)
+		request += fmt.Sprintf("%s/", uuid)
+		requestHandler += ":uuid/"
+	}
+
+	router := New()
+
+	for _, v := range dynamicRoutes {
+		router.AddRegex(v.name, v.regex)
+	}
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		for i := 0; i <= 10; i++ {
+			expect(t, GetParam("uuid", r, i), uuids[i])
+		}
+		w.Write([]byte("named params"))
+	}
+
+	router.HandleFunc(requestHandler, handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", request, nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
 }
