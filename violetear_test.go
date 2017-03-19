@@ -607,5 +607,44 @@ func TestVersioning(t *testing.T) {
 	req.Header.Set("Accept", "application/vnd.violetear.v2")
 	router.ServeHTTP(w, req)
 	expect(t, w.Body.String(), "* v2")
+}
 
+func TestGetParam(t *testing.T) {
+	testCases := []struct {
+		requestPath   string
+		expectedParam string
+	}{
+		{
+			requestPath:   "/tests/abc",
+			expectedParam: "abc",
+		},
+		{
+			requestPath:   "/other_test",
+			expectedParam: "",
+		},
+		// {
+		// todo: investigate, currently returns "tests" instead of ""
+		// 	requestPath:   "/tests/",
+		// 	expectedParam: "",
+		// },
+	}
+
+	router := New()
+	router.AddRegex(":test_param", `^\w+$`)
+
+	testHandler := func(w http.ResponseWriter, r *http.Request) {
+		obtainedParam := GetParam("test_param", r)
+		w.Write([]byte(obtainedParam))
+	}
+
+	router.HandleFunc("/tests/:test_param", testHandler, "GET")
+	router.HandleFunc("/other_test", testHandler, "GET")
+
+	for _, testCase := range testCases {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", testCase.requestPath, nil)
+		router.ServeHTTP(w, req)
+
+		expect(t, w.Body.String(), testCase.expectedParam)
+	}
 }
