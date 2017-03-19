@@ -144,19 +144,24 @@ func (v *Router) AddRegex(name, regex string) error {
 }
 
 // GetParam returns a value for the parameter set in path
-// and described via a regexp on Router initialization
-// The method is using the context in order to retrieve the value,
-// thus is only applicable for go >= 1.7
-func GetParam(name string, r *http.Request) string {
-	params, ok := r.Context().Value(ParamsKey).(Params)
-	if !ok {
-		return ""
-	}
-
+// When having duplicate params pass the index as the last argument to
+// retrieve the desired value.
+func GetParam(name string, r *http.Request, index ...int) string {
+	params := r.Context().Value(ParamsKey).(Params)
 	if param := params[":"+name]; param != nil {
-		return param.(string)
+		switch param := param.(type) {
+		case []string:
+			if len(index) > 0 {
+				if index[0] > len(param) {
+					return ""
+				}
+				return param[index[0]]
+			}
+			return param[0]
+		default:
+			return param.(string)
+		}
 	}
-
 	return ""
 }
 
