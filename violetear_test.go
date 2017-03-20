@@ -29,6 +29,15 @@ func expectDeepEqual(t *testing.T, a interface{}, b interface{}) {
 	}
 }
 
+func genUUID() string {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%X-%X-%X-%X-%X", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
+}
+
 type testRouter struct {
 	path     string
 	methods  string
@@ -460,15 +469,6 @@ func TestContextNamedParamsSlice(t *testing.T) {
 }
 
 func TestContextManyNamedParamsSlice(t *testing.T) {
-	genUUID := func() string {
-		b := make([]byte, 16)
-		_, err := rand.Read(b)
-		if err != nil {
-			t.Fatal(err)
-		}
-		return fmt.Sprintf("%X-%X-%X-%X-%X", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
-	}
-
 	var uuids []string
 	request := "/test/"
 	requestHandler := "/test/"
@@ -607,5 +607,4 @@ func TestVersioning(t *testing.T) {
 	req.Header.Set("Accept", "application/vnd.violetear.v2")
 	router.ServeHTTP(w, req)
 	expect(t, w.Body.String(), "* v2")
-
 }

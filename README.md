@@ -457,6 +457,8 @@ In some cases there is a need to pass data across
 handlers/middlewares, for doing this **Violetear** uses
 [net/context](https://godoc.org/golang.org/x/net/context).
 
+When using dynamic routes `:regex`, you can use `GetParam` or `GetParams`, see below.
+
 Example:
 
 ```go
@@ -480,11 +482,14 @@ func catchAll(w http.ResponseWriter, r *http.Request) {
 func handleUUID(w http.ResponseWriter, r *http.Request) {
     // get router params
     params := r.Context().Value(violetear.ParamsKey).(violetear.Params)
+    // using GetParam
+    uuid := violetear.GetParam("uuid", r)
     // add a key-value pair to the context
     ctx := context.WithValue(r.Context(), "key", "my-value")
     // print current value for :uuid
-    fmt.Fprintf(w, "Named parameter: %q, key: %s",
+    fmt.Fprintf(w, "Named parameter: %q, uuid; %q,  key: %s",
         params[":uuid"],
+        uuid,
         ctx.Value("key"),
     )
 }
@@ -514,9 +519,14 @@ An slice is created, for getting the values you need to do something like:
 
 > Notice the ``:`` prefix when getting the named_parameters
 
+Or by using `GetParams`:
+
+        uuid := violetear.GetParams("uuid")
+
 After this you can access the slice like normal:
 
         fmt.Println(uuid[0], uuid[1])
+
 
 
 ## Only for go < 1.7
