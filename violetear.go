@@ -119,7 +119,7 @@ func (v *Router) Handle(path string, handler http.Handler, httpMethods ...string
 
 	// if no methods, accept ALL
 	methods := "ALL"
-	if len(httpMethods) > 0 {
+	if len(httpMethods) > 0 && len(strings.TrimSpace(httpMethods[0])) > 0 {
 		methods = httpMethods[0]
 	}
 
