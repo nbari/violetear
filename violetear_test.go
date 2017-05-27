@@ -162,6 +162,19 @@ var routes = []testRouter{
 		{"/127.0.0.1", "GET", 200},
 		{"/:ip", "GET", 200},
 	}},
+	{"/all-methods", "  ", []testRequests{
+		{"/all-methods", "GET", 200},
+		{"/all-methods", "POST", 200},
+		{"/all-methods", "HEAD", 200},
+		{"/all-methods", "PUT", 200},
+		{"/all-methods", "OPTIONS", 200},
+		{"/all-methods", "DELETE", 200},
+		{"/all-methods", "PATCH", 200},
+	}},
+	{"/trimspace", " GET  ", []testRequests{
+		{"/trimspace", "GET", 200},
+		{"/trimspace", "PATCH", 405},
+	}},
 }
 
 func myMethodNotAllowed() http.HandlerFunc {
