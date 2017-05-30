@@ -84,7 +84,7 @@ type Router struct {
 	// RequestID name of the header to use or create.
 	RequestID string
 
-	// Verbose
+	// Verbose uses the default logger to print out the paths as they are added.
 	Verbose bool
 }
 
