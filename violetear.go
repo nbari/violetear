@@ -49,6 +49,8 @@ import (
 	"time"
 )
 
+// key int is unexported to prevent collisions with context keys defined in
+// other packages.
 type key int
 
 // ParamsKey used for the context
@@ -112,7 +114,7 @@ func (v *Router) Handle(path string, handler http.Handler, httpMethods ...string
 	for _, p := range pathParts {
 		if strings.HasPrefix(p, ":") {
 			if _, ok := v.dynamicRoutes[p]; !ok {
-				return fmt.Errorf("[%s] not found, need to add it using AddRegex(\"%s\", `your regex`)", p, p)
+				return fmt.Errorf("[%s] not found, need to add it using AddRegex(%q, `your regex`)", p, p)
 			}
 		}
 	}
@@ -259,7 +261,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	//h http.Handler
+	// h http.Handler
 	h := match(node, path, leaf)
 
 	// dispatch request
