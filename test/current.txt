@@ -1,0 +1,6 @@
+goos: darwin
+goarch: amd64
+pkg: github.com/nbari/violetear/test
+BenchmarkRouter-4   	 1000000	      1179 ns/op	     792 B/op	      11 allocs/op
+PASS
+ok  	github.com/nbari/violetear/test	1.204s
