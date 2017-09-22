@@ -2,3 +2,4 @@ coverage.out
 test.test
 *.log
 profile
+!*profile/
