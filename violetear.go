@@ -44,7 +44,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -89,8 +88,6 @@ type Router struct {
 	// Verbose
 	Verbose bool
 }
-
-var splitPathRx = regexp.MustCompile(`[^/ ]+`)
 
 // New returns a new initialized router.
 func New() *Router {
@@ -281,12 +278,12 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // splitPath returns an slice of the path
 func (v *Router) splitPath(p string) []string {
-	pathParts := splitPathRx.FindAllString(p, -1)
-
+	pathParts := strings.FieldsFunc(p, func(c rune) bool {
+		return c == '/'
+	})
 	// root (empty slice)
 	if len(pathParts) == 0 {
 		pathParts = append(pathParts, "/")
 	}
-
 	return pathParts
 }
