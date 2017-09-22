@@ -1,6 +1,7 @@
 language: go
 
 go:
+  - 1.9
   - 1.8
   - 1.7
   - tip
@@ -12,8 +13,8 @@ before_install:
   - if ! go get github.com/golang/tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
 
 script:
-  - $HOME/gopath/bin/goveralls -service=travis-ci
-  - go test -coverprofile=coverage.txt -covermode=atomic
+  - go test -v -coverprofile=count -covermode=coverage.out
+  - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
