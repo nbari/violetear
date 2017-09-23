@@ -92,7 +92,7 @@ type Router struct {
 // New returns a new initialized router.
 func New() *Router {
 	return &Router{
-		routes:        NewTrie(),
+		routes:        &Trie{},
 		dynamicRoutes: make(dynamicSet),
 		Verbose:       true,
 	}
@@ -197,11 +197,13 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// checkMethod check if method is allowed or not
 	checkMethod := func(node *Trie, method string) http.Handler {
-		if h, ok := node.Handler[method]; ok {
-			return h
-		}
-		if h, ok := node.Handler["ALL"]; ok {
-			return h
+		for _, h := range node.Handler {
+			if h.Method == "ALL" {
+				return h.Handler
+			}
+			if h.Method == method {
+				return h.Handler
+			}
 		}
 		if v.NotAllowedHandler != nil {
 			return v.NotAllowedHandler

@@ -1,21 +1,11 @@
 package violetear
 
 import (
-	"net/http"
 	"testing"
 )
 
-func TestTrieNew(t *testing.T) {
-	trie := NewTrie()
-	myTrie := &Trie{
-		Node:    make([]*Trie, 0),
-		Handler: map[string]http.Handler{},
-	}
-	expectDeepEqual(t, trie, myTrie)
-}
-
 func TestTrieSetEmpty(t *testing.T) {
-	trie := NewTrie()
+	trie := &Trie{}
 	err := trie.Set([]string{}, nil, "ALL", "")
 	if err == nil {
 		t.Error("path cannot be empty")
@@ -23,7 +13,7 @@ func TestTrieSetEmpty(t *testing.T) {
 }
 
 func TestTrieSet(t *testing.T) {
-	trie := NewTrie()
+	trie := &Trie{}
 
 	err := trie.Set([]string{"/"}, nil, "ALL", "")
 	expect(t, err, nil)
@@ -75,7 +65,7 @@ func TestTrieSet(t *testing.T) {
 }
 
 func TestTrieGet(t *testing.T) {
-	trie := NewTrie()
+	trie := &Trie{}
 	err := trie.Set([]string{"*"}, nil, "ALL", "")
 	expect(t, err, nil)
 	err = trie.Set([]string{"*"}, nil, "ALL", "v3")
