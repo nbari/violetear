@@ -283,7 +283,7 @@ func (v *Router) splitPath(p string) []string {
 	})
 	// root (empty slice)
 	if len(pathParts) == 0 {
-		pathParts = append(pathParts, "/")
+		return []string{"/"}
 	}
 	return pathParts
 }
