@@ -325,6 +325,20 @@ func TestRequestId(t *testing.T) {
 	expect(t, w.HeaderMap.Get("Request_log_id"), "5629498000ff0daa102de72aef0001737e7a756e7a756e6369746f2d617069000131000100")
 }
 
+func TestRequestIdNoLogRequests(t *testing.T) {
+	router := New()
+	router.LogRequests = false
+	router.RequestID = "Request_log_id"
+	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	expect(t, err, nil)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("Request_log_id", "5629498000ff0daa102de72aef0001737e7a756e7a756e6369746f2d617069000131000100")
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+	expect(t, w.HeaderMap.Get("Request_log_id"), "5629498000ff0daa102de72aef0001737e7a756e7a756e6369746f2d617069000131000100")
+}
+
 func TestRequestIdCreate(t *testing.T) {
 	router := New()
 	router.LogRequests = true

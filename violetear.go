@@ -154,8 +154,10 @@ func (v *Router) MethodNotAllowed() http.HandlerFunc {
 
 // ServeHTTP dispatches the handler registered in the matched path
 func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
-	lw := NewResponseWriter(w)
+	var lw *ResponseWriter
+	if v.LogRequests {
+		lw = NewResponseWriter(w)
+	}
 	params := make(Params)
 
 	// panic handler
@@ -256,26 +258,30 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Request-ID
 	if v.RequestID != "" {
 		if rid := r.Header.Get(v.RequestID); rid != "" {
-			lw.Header().Set(v.RequestID, rid)
+			if v.LogRequests {
+				lw.Header().Set(v.RequestID, rid)
+			} else {
+				w.Header().Set(v.RequestID, rid)
+			}
 		}
 	}
 
 	// h http.Handler
 	h := match(node, path, leaf)
 
-	// dispatch request
-	h.ServeHTTP(lw, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
-
 	if v.LogRequests {
+		// dispatch request
+		h.ServeHTTP(lw, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
 		log.Printf("%s [%s] %d %d %v %s",
 			r.RemoteAddr,
 			r.URL,
 			lw.Status(),
 			lw.Size(),
-			time.Since(start),
+			time.Since(lw.Start()),
 			lw.Header().Get(v.RequestID))
+	} else {
+		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
 	}
-	return
 }
 
 // splitPath returns an slice of the path
