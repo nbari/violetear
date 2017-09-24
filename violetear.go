@@ -63,11 +63,14 @@ type Params map[string]interface{}
 
 // Router struct
 type Router struct {
+	// dynamicRoutes map of dynamic routes and regular expressions
+	dynamicRoutes dynamicSet
+
 	// Routes to be matched
 	routes *Trie
 
-	// dynamicRoutes map of dynamic routes and regular expressions
-	dynamicRoutes dynamicSet
+	// w custom ResponseWriter used if LogRequests = true
+	w *ResponseWriter
 
 	// LogRequests yes or no
 	LogRequests bool
@@ -154,9 +157,8 @@ func (v *Router) MethodNotAllowed() http.HandlerFunc {
 
 // ServeHTTP dispatches the handler registered in the matched path
 func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var lw *ResponseWriter
 	if v.LogRequests {
-		lw = NewResponseWriter(w)
+		v.w = NewResponseWriter(w)
 	}
 	params := make(Params)
 
@@ -259,7 +261,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if v.RequestID != "" {
 		if rid := r.Header.Get(v.RequestID); rid != "" {
 			if v.LogRequests {
-				lw.Header().Set(v.RequestID, rid)
+				v.w.Header().Set(v.RequestID, rid)
 			} else {
 				w.Header().Set(v.RequestID, rid)
 			}
@@ -269,16 +271,16 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// h http.Handler
 	h := match(node, path, leaf)
 
+	// dispatch request
 	if v.LogRequests {
-		// dispatch request
-		h.ServeHTTP(lw, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
+		h.ServeHTTP(v.w, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
 		log.Printf("%s [%s] %d %d %v %s",
 			r.RemoteAddr,
 			r.URL,
-			lw.Status(),
-			lw.Size(),
-			time.Since(lw.Start()),
-			lw.Header().Get(v.RequestID))
+			v.w.Status(),
+			v.w.Size(),
+			time.Since(v.w.Start()),
+			v.w.Header().Get(v.RequestID))
 	} else {
 		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
 	}
