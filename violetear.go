@@ -258,8 +258,9 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Request-ID
+	var rid string
 	if v.RequestID != "" {
-		if rid := r.Header.Get(v.RequestID); rid != "" {
+		if rid = r.Header.Get(v.RequestID); rid != "" {
 			if v.LogRequests {
 				v.w.Header().Set(v.RequestID, rid)
 			} else {
@@ -280,7 +281,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			v.w.Status(),
 			v.w.Size(),
 			time.Since(v.w.Start()),
-			v.w.Header().Get(v.RequestID))
+			rid)
 	} else {
 		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
 	}
