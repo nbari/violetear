@@ -8,15 +8,13 @@ deps:
 	${GO} get github.com/nbari/violetear/middleware
 
 build: deps
-build:
 	${GO} build
 
 clean:
 	@rm -rf *.out
 
 test: deps
-test:
-	${GO} test
+	${GO} test -race
 
 cover:
 	${GO} test -cover && \
