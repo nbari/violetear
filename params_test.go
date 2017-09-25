@@ -264,3 +264,69 @@ func TestGetParamsDuplicates(t *testing.T) {
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
 }
+
+func TestGetParamsDuplicatesLogRequests(t *testing.T) {
+	var uuids []string
+	request := "/test/"
+	requestHandler := "/test/"
+	for i := 0; i < 10; i++ {
+		uuid := genUUID()
+		uuids = append(uuids, uuid)
+		request += fmt.Sprintf("%s/", uuid)
+		requestHandler += ":uuid/"
+	}
+
+	router := New()
+	router.LogRequests = true
+
+	for _, v := range dynamicRoutes {
+		router.AddRegex(v.name, v.regex)
+	}
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		p := GetParams("uuid", r)
+		expect(t, true, (reflect.DeepEqual(p, uuids)))
+		w.Write([]byte("named params"))
+	}
+
+	router.HandleFunc(requestHandler, handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", request, nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+}
+
+func TestGetParamsDuplicatesNonExistent(t *testing.T) {
+	var uuids []string
+	request := "/test/"
+	requestHandler := "/test/"
+	for i := 0; i < 3; i++ {
+		uuid := genUUID()
+		uuids = append(uuids, uuid)
+		request += fmt.Sprintf("%s/", uuid)
+		requestHandler += ":uuid/"
+	}
+
+	router := New()
+	router.LogRequests = true
+
+	for _, v := range dynamicRoutes {
+		router.AddRegex(v.name, v.regex)
+	}
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		none := GetParams("none", r)
+		expect(t, 0, len(none))
+		expect(t, GetParam("uuid", r, 1), uuids[1])
+		expect(t, GetParam("none", r, 1), "")
+		w.Write([]byte("named params"))
+	}
+
+	router.HandleFunc(requestHandler, handler)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", request, nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+}
