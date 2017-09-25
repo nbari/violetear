@@ -274,7 +274,11 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// dispatch request
 	if v.LogRequests {
-		h.ServeHTTP(v.w, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
+		if len(params) == 0 {
+			h.ServeHTTP(v.w, r)
+		} else {
+			h.ServeHTTP(v.w, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
+		}
 		log.Printf("%s [%s] %d %d %v %s",
 			r.RemoteAddr,
 			r.URL,
@@ -283,7 +287,11 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			time.Since(v.w.Start()),
 			rid)
 	} else {
-		h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
+		if len(params) == 0 {
+			h.ServeHTTP(w, r)
+		} else {
+			h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
+		}
 	}
 }
 
