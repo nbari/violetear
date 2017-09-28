@@ -275,7 +275,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.ServeHTTP(ww, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
 	}
 	if v.LogRequests {
-		log.Printf("%s [%s] %d %d %v %s",
+		log.Printf("%s [%s] %d %d %s %s",
 			r.RemoteAddr,
 			r.URL,
 			ww.Status(),
