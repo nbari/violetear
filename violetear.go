@@ -59,11 +59,14 @@ const (
 
 // Router struct
 type Router struct {
-	// dynamicRoutes map of dynamic routes and regular expressions
-	dynamicRoutes dynamicSet
+	// dynamicRoutes set of dynamic routes
+	dynamicRoutes []dynamicRoute
 
 	// Routes to be matched
 	routes *Trie
+
+	// Logger
+	Logger func(*ResponseWriter, *http.Request)
 
 	// LogRequests yes or no
 	LogRequests bool
@@ -88,9 +91,9 @@ type Router struct {
 // New returns a new initialized router.
 func New() *Router {
 	return &Router{
-		routes:        &Trie{},
-		dynamicRoutes: make(dynamicSet),
-		Verbose:       true,
+		routes:  &Trie{},
+		Logger:  logger,
+		Verbose: true,
 	}
 }
 
@@ -106,7 +109,7 @@ func (v *Router) Handle(path string, handler http.Handler, httpMethods ...string
 	// search for dynamic routes
 	for _, p := range pathParts {
 		if strings.HasPrefix(p, ":") {
-			if _, ok := v.dynamicRoutes[p]; !ok {
+			if v.dynamicRoutesGet(p) == nil {
 				return fmt.Errorf("[%s] not found, need to add it using AddRegex(%q, `your regex`)", p, p)
 			}
 		}
@@ -135,7 +138,7 @@ func (v *Router) HandleFunc(path string, handler http.HandlerFunc, httpMethods .
 
 // AddRegex adds a ":named" regular expression to the dynamicRoutes
 func (v *Router) AddRegex(name, regex string) error {
-	return v.dynamicRoutes.Set(name, regex)
+	return v.dynamicRoutesSet(name, regex)
 }
 
 // MethodNotAllowed default handler for 405
@@ -172,7 +175,7 @@ func (v *Router) match(node *Trie, path []string, leaf bool, params *Params, met
 	} else if node.HasRegex {
 		for _, n := range node.Node {
 			if strings.HasPrefix(n.path, ":") {
-				rx := v.dynamicRoutes[n.path]
+				rx := v.dynamicRoutesGet(n.path)
 				if rx.MatchString(path[0]) {
 					// add param to context
 					params.Set(n.path, path[0])
@@ -254,13 +257,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			h.ServeHTTP(ww, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
 		}
-		log.Printf("%s [%s] %d %d %s %s",
-			r.RemoteAddr,
-			r.URL,
-			ww.Status(),
-			ww.Size(),
-			ww.RequestTime(),
-			ww.RequestID())
+		v.Logger(ww, r)
 	} else {
 		if len(*params) == 0 {
 			h.ServeHTTP(w, r)

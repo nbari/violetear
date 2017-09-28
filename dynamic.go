@@ -7,9 +7,12 @@ import (
 	"strings"
 )
 
-type dynamicSet map[string]*regexp.Regexp
+type dynamicRoute struct {
+	name string
+	rx   *regexp.Regexp
+}
 
-func (d dynamicSet) Set(name, regex string) error {
+func (v *Router) dynamicRoutesSet(name, regex string) error {
 	if !strings.HasPrefix(name, ":") {
 		return errors.New("Dynamic route name must start with a colon ':'")
 	}
@@ -20,7 +23,17 @@ func (d dynamicSet) Set(name, regex string) error {
 	}
 
 	r := regexp.MustCompile(regex)
-	d[name] = r
+	if v.dynamicRoutesGet(name) == nil {
+		v.dynamicRoutes = append(v.dynamicRoutes, dynamicRoute{name, r})
+	}
+	return nil
+}
 
+func (v *Router) dynamicRoutesGet(name string) *regexp.Regexp {
+	for _, r := range v.dynamicRoutes {
+		if r.name == name {
+			return r.rx
+		}
+	}
 	return nil
 }
