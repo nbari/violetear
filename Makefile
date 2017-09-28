@@ -1,8 +1,11 @@
-.PHONY: all deps clean test build cover
+.PHONY: all bench build clean cover deps test
 
 GO ?= go
 
 all: build test
+
+bench:
+	${GO} test -run=^$$ -bench=.
 
 deps:
 	${GO} get github.com/nbari/violetear/middleware

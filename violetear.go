@@ -60,7 +60,7 @@ const (
 // Router struct
 type Router struct {
 	// dynamicRoutes set of dynamic routes
-	dynamicRoutes []dynamicRoute
+	dynamicRoutes *dynRoutes
 
 	// Routes to be matched
 	routes *Trie
@@ -91,9 +91,10 @@ type Router struct {
 // New returns a new initialized router.
 func New() *Router {
 	return &Router{
-		routes:  &Trie{},
-		Logger:  logger,
-		Verbose: true,
+		dynamicRoutes: &dynRoutes{},
+		routes:        &Trie{},
+		Logger:        logger,
+		Verbose:       true,
 	}
 }
 
@@ -109,7 +110,7 @@ func (v *Router) Handle(path string, handler http.Handler, httpMethods ...string
 	// search for dynamic routes
 	for _, p := range pathParts {
 		if strings.HasPrefix(p, ":") {
-			if v.dynamicRoutesGet(p) == nil {
+			if v.dynamicRoutes.Get(p) == nil {
 				return fmt.Errorf("[%s] not found, need to add it using AddRegex(%q, `your regex`)", p, p)
 			}
 		}
@@ -138,7 +139,7 @@ func (v *Router) HandleFunc(path string, handler http.HandlerFunc, httpMethods .
 
 // AddRegex adds a ":named" regular expression to the dynamicRoutes
 func (v *Router) AddRegex(name, regex string) error {
-	return v.dynamicRoutesSet(name, regex)
+	return v.dynamicRoutes.Set(name, regex)
 }
 
 // MethodNotAllowed default handler for 405
@@ -151,7 +152,7 @@ func (v *Router) MethodNotAllowed() http.HandlerFunc {
 	})
 }
 
-// checkMethod check if method is allowed or not
+// checkMethod check if request method is allowed or not
 func (v *Router) checkMethod(node *Trie, method string) http.Handler {
 	for _, h := range node.Handler {
 		if h.Method == "ALL" {
@@ -167,7 +168,7 @@ func (v *Router) checkMethod(node *Trie, method string) http.Handler {
 	return v.MethodNotAllowed()
 }
 
-// match find a handler for the request
+// match recursively find a handler for the request
 func (v *Router) match(node *Trie, path []string, leaf bool, params *Params, method, version string) http.Handler {
 	catchall := false
 	if len(node.Handler) > 0 && leaf {
@@ -175,7 +176,7 @@ func (v *Router) match(node *Trie, path []string, leaf bool, params *Params, met
 	} else if node.HasRegex {
 		for _, n := range node.Node {
 			if strings.HasPrefix(n.path, ":") {
-				rx := v.dynamicRoutesGet(n.path)
+				rx := v.dynamicRoutes.Get(n.path)
 				if rx.MatchString(path[0]) {
 					// add param to context
 					params.Set(n.path, path[0])
@@ -255,14 +256,14 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if len(*params) == 0 {
 			h.ServeHTTP(ww, r)
 		} else {
-			h.ServeHTTP(ww, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
+			h.ServeHTTP(ww, r.WithContext(context.WithValue(r.Context(), ParamsKey, *params)))
 		}
 		v.Logger(ww, r)
 	} else {
 		if len(*params) == 0 {
 			h.ServeHTTP(w, r)
 		} else {
-			h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
+			h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ParamsKey, *params)))
 		}
 	}
 }

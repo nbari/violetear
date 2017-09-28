@@ -15,15 +15,11 @@ type ResponseWriter struct {
 
 // NewResponseWriter returns ResponseWriter
 func NewResponseWriter(w http.ResponseWriter, rid string) *ResponseWriter {
-	rw := &ResponseWriter{
+	return &ResponseWriter{
 		ResponseWriter: w,
+		requestID:      rid,
 		start:          time.Now(),
 	}
-	if rid != "" {
-		rw.requestID = w.Header().Get(rid)
-		rw.Header().Set(rid, rw.requestID)
-	}
-	return rw
 }
 
 // Status provides an easy way to retrieve the status code
@@ -43,7 +39,7 @@ func (w *ResponseWriter) RequestTime() string {
 
 // RequestID retrieve the Request ID
 func (w *ResponseWriter) RequestID() string {
-	return w.requestID
+	return w.Header().Get(w.requestID)
 }
 
 // Write satisfies the http.ResponseWriter interface and
