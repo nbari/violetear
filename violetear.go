@@ -157,18 +157,16 @@ func (v *Router) MethodNotAllowed() http.HandlerFunc {
 
 // ServeHTTP dispatches the handler registered in the matched path
 func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if v.LogRequests {
-		v.w = NewResponseWriter(w)
-	}
+	ww := NewResponseWriter(w)
 	params := make(Params)
 
 	// panic handler
 	defer func() {
 		if err := recover(); err != nil {
 			if v.PanicHandler != nil {
-				v.PanicHandler(w, r)
+				v.PanicHandler(ww, r)
 			} else {
-				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
+				http.Error(ww, http.StatusText(500), http.StatusInternalServerError)
 			}
 		}
 	}()
@@ -262,9 +260,7 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if v.RequestID != "" {
 		if rid = r.Header.Get(v.RequestID); rid != "" {
 			if v.LogRequests {
-				v.w.Header().Set(v.RequestID, rid)
-			} else {
-				w.Header().Set(v.RequestID, rid)
+				ww.Header().Set(v.RequestID, rid)
 			}
 		}
 	}
@@ -273,25 +269,19 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h := match(node, path, leaf)
 
 	// dispatch request
+	if len(params) == 0 {
+		h.ServeHTTP(ww, r)
+	} else {
+		h.ServeHTTP(ww, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
+	}
 	if v.LogRequests {
-		if len(params) == 0 {
-			h.ServeHTTP(v.w, r)
-		} else {
-			h.ServeHTTP(v.w, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
-		}
 		log.Printf("%s [%s] %d %d %v %s",
 			r.RemoteAddr,
 			r.URL,
-			v.w.Status(),
-			v.w.Size(),
-			time.Since(v.w.Start()),
+			ww.Status(),
+			ww.Size(),
+			time.Since(ww.Start()),
 			rid)
-	} else {
-		if len(params) == 0 {
-			h.ServeHTTP(w, r)
-		} else {
-			h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
-		}
 	}
 }
 

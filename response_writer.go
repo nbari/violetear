@@ -34,21 +34,14 @@ func (w *ResponseWriter) Start() time.Time {
 	return w.start
 }
 
-// Header returns & satisfies the http.ResponseWriter interface
-func (w *ResponseWriter) Header() http.Header {
-	return w.ResponseWriter.Header()
-}
-
 // Write satisfies the http.ResponseWriter interface and
 // captures data written, in bytes
 func (w *ResponseWriter) Write(data []byte) (int, error) {
 	if w.status == 0 {
 		w.WriteHeader(http.StatusOK)
 	}
-
 	size, err := w.ResponseWriter.Write(data)
 	w.size += size
-
 	return size, err
 }
 
