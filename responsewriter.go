@@ -32,7 +32,7 @@ func (w *ResponseWriter) Size() int {
 	return w.size
 }
 
-// Start retrieve the start time
+// RequestTime return the request time
 func (w *ResponseWriter) RequestTime() string {
 	return time.Since(w.start).String()
 }
