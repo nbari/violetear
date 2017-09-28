@@ -8,7 +8,7 @@ import (
 
 func TestResponseWriterStatus(t *testing.T) {
 	rec := httptest.NewRecorder()
-	rw := NewResponseWriter(rec)
+	rw := NewResponseWriter(rec, "")
 
 	expect(t, rw.Status(), 0)
 
@@ -19,7 +19,7 @@ func TestResponseWriterStatus(t *testing.T) {
 
 func TestResponseWriterSize(t *testing.T) {
 	rec := httptest.NewRecorder()
-	rw := NewResponseWriter(rec)
+	rw := NewResponseWriter(rec, "")
 
 	rw.Write([]byte("日本語"))
 	expect(t, rw.Size(), 9)
@@ -30,14 +30,14 @@ func TestResponseWriterSize(t *testing.T) {
 
 func TestResponseWriterHeader(t *testing.T) {
 	rec := httptest.NewRecorder()
-	rw := NewResponseWriter(rec)
+	rw := NewResponseWriter(rec, "")
 
 	expect(t, len(rec.Header()), len(rw.Header()))
 }
 
 func TestResponseWriterWrite(t *testing.T) {
 	rec := httptest.NewRecorder()
-	rw := NewResponseWriter(rec)
+	rw := NewResponseWriter(rec, "")
 
 	rw.Write([]byte("Hello world"))
 	rw.Write([]byte(". !"))
@@ -50,7 +50,7 @@ func TestResponseWriterWrite(t *testing.T) {
 
 func TestResponseWriterWriteHeader(t *testing.T) {
 	rec := httptest.NewRecorder()
-	rw := NewResponseWriter(rec)
+	rw := NewResponseWriter(rec, "")
 
 	rw.WriteHeader(http.StatusNotFound)
 

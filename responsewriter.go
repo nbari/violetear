@@ -5,18 +5,25 @@ import (
 	"time"
 )
 
-// ResponseWriter wraps the standard http.ResponseWriter allowing for more
-// verbose logging
+// ResponseWriter wraps the standard http.ResponseWriter
 type ResponseWriter struct {
 	http.ResponseWriter
-	status int
-	size   int
-	start  time.Time
+	requestID    string
+	size, status int
+	start        time.Time
 }
 
 // NewResponseWriter returns ResponseWriter
-func NewResponseWriter(w http.ResponseWriter) *ResponseWriter {
-	return &ResponseWriter{w, 0, 0, time.Now()}
+func NewResponseWriter(w http.ResponseWriter, rid string) *ResponseWriter {
+	rw := &ResponseWriter{
+		ResponseWriter: w,
+		start:          time.Now(),
+	}
+	if rid != "" {
+		rw.requestID = w.Header().Get(rid)
+		rw.Header().Set(rid, rw.requestID)
+	}
+	return rw
 }
 
 // Status provides an easy way to retrieve the status code
@@ -30,8 +37,13 @@ func (w *ResponseWriter) Size() int {
 }
 
 // Start retrieve the start time
-func (w *ResponseWriter) Start() time.Time {
-	return w.start
+func (w *ResponseWriter) RequestTime() string {
+	return time.Since(w.start).String()
+}
+
+// RequestID retrieve the Request ID
+func (w *ResponseWriter) RequestID() string {
+	return w.requestID
 }
 
 // Write satisfies the http.ResponseWriter interface and
@@ -46,7 +58,7 @@ func (w *ResponseWriter) Write(data []byte) (int, error) {
 }
 
 // WriteHeader satisfies the http.ResponseWriter interface and
-// allows us to cach the status code
+// allows us to catch the status code
 func (w *ResponseWriter) WriteHeader(statusCode int) {
 	w.status = statusCode
 	w.ResponseWriter.WriteHeader(statusCode)

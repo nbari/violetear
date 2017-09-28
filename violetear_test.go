@@ -1,7 +1,6 @@
 package violetear
 
 import (
-	"context"
 	"crypto/rand"
 	"fmt"
 	"log"
@@ -10,8 +9,6 @@ import (
 	"reflect"
 	"runtime"
 	"testing"
-
-	"github.com/nbari/violetear/middleware"
 )
 
 /* Test Helpers */
@@ -386,6 +383,7 @@ func TestHandleFuncMethods(t *testing.T) {
 	expect(t, w.Code, 405)
 }
 
+/*
 func TestContextNamedParams(t *testing.T) {
 	router := New()
 
@@ -528,7 +526,7 @@ func TestContextManyNamedParamsSlice(t *testing.T) {
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
 }
-
+*/
 func TestVersioning(t *testing.T) {
 	router := New()
 	for _, v := range dynamicRoutes {

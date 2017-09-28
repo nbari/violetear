@@ -45,7 +45,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 )
 
 // key int is unexported to prevent collisions with context keys defined in
@@ -58,9 +57,6 @@ const (
 	versionHeader     = "application/vnd."
 )
 
-// Params string/interface map used with context
-type Params map[string]interface{}
-
 // Router struct
 type Router struct {
 	// dynamicRoutes map of dynamic routes and regular expressions
@@ -68,9 +64,6 @@ type Router struct {
 
 	// Routes to be matched
 	routes *Trie
-
-	// w custom ResponseWriter used if LogRequests = true
-	w *ResponseWriter
 
 	// LogRequests yes or no
 	LogRequests bool
@@ -155,36 +148,90 @@ func (v *Router) MethodNotAllowed() http.HandlerFunc {
 	})
 }
 
+// checkMethod check if method is allowed or not
+func (v *Router) checkMethod(node *Trie, method string) http.Handler {
+	for _, h := range node.Handler {
+		if h.Method == "ALL" {
+			return h.Handler
+		}
+		if h.Method == method {
+			return h.Handler
+		}
+	}
+	if v.NotAllowedHandler != nil {
+		return v.NotAllowedHandler
+	}
+	return v.MethodNotAllowed()
+}
+
+// match find a handler for the request
+func (v *Router) match(node *Trie, path []string, leaf bool, params *Params, method, version string) http.Handler {
+	catchall := false
+	if len(node.Handler) > 0 && leaf {
+		return v.checkMethod(node, method)
+	} else if node.HasRegex {
+		for _, n := range node.Node {
+			if strings.HasPrefix(n.path, ":") {
+				rx := v.dynamicRoutes[n.path]
+				if rx.MatchString(path[0]) {
+					// add param to context
+					params.Set(n.path, path[0])
+					path[0] = n.path
+					node, path, leaf, _ := node.Get(path, version)
+					return v.match(node, path, leaf, params, method, version)
+				}
+			}
+		}
+		if node.HasCatchall {
+			catchall = true
+		}
+	} else if node.HasCatchall {
+		catchall = true
+	}
+	if catchall {
+		for _, n := range node.Node {
+			if n.path == "*" {
+				// add "*" to context
+				params.Set("*", path[0])
+				return v.checkMethod(n, method)
+			}
+		}
+	}
+	// NotFound
+	if v.NotFoundHandler != nil {
+		return v.NotFoundHandler
+	}
+	return http.NotFoundHandler()
+}
+
 // ServeHTTP dispatches the handler registered in the matched path
 func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ww := NewResponseWriter(w)
-	params := make(Params)
-
 	// panic handler
 	defer func() {
 		if err := recover(); err != nil {
 			if v.PanicHandler != nil {
-				v.PanicHandler(ww, r)
+				v.PanicHandler(w, r)
 			} else {
-				http.Error(ww, http.StatusText(500), http.StatusInternalServerError)
+				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
 			}
 		}
 	}()
 
-	// fill the params map
-	setParam := func(k, v string) {
-		if param, ok := params[k]; ok {
-			switch param.(type) {
-			case string:
-				param = []string{param.(string), v}
-			case []string:
-				param = append(param.([]string), v)
-			}
-			params[k] = param
-		} else {
-			params[k] = v
+	// Request-ID
+	if v.RequestID != "" {
+		if rid := r.Header.Get(v.RequestID); rid != "" {
+			w.Header().Set(v.RequestID, rid)
 		}
 	}
+
+	// wrap ResponseWriter
+	var ww *ResponseWriter
+	if v.LogRequests {
+		ww = NewResponseWriter(w, v.RequestID)
+	}
+
+	// named params "/:foo/:bar"
+	params := &Params{}
 
 	// set version based on the value of "Accept: application/vnd.*"
 	version := r.Header.Get("Accept")
@@ -197,91 +244,29 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// _ path never empty, defaults to ("/")
 	node, path, leaf, _ := v.routes.Get(v.splitPath(r.URL.Path), version)
 
-	// checkMethod check if method is allowed or not
-	checkMethod := func(node *Trie, method string) http.Handler {
-		for _, h := range node.Handler {
-			if h.Method == "ALL" {
-				return h.Handler
-			}
-			if h.Method == method {
-				return h.Handler
-			}
-		}
-		if v.NotAllowedHandler != nil {
-			return v.NotAllowedHandler
-		}
-		return v.MethodNotAllowed()
-	}
-
-	var match func(node *Trie, path []string, leaf bool) http.Handler
-
-	// match find a handler for the request
-	match = func(node *Trie, path []string, leaf bool) http.Handler {
-		catchall := false
-		if len(node.Handler) > 0 && leaf {
-			return checkMethod(node, r.Method)
-		} else if node.HasRegex {
-			for _, n := range node.Node {
-				if strings.HasPrefix(n.path, ":") {
-					rx := v.dynamicRoutes[n.path]
-					if rx.MatchString(path[0]) {
-						// add param to context
-						setParam(n.path, path[0])
-						path[0] = n.path
-						node, path, leaf, _ := node.Get(path, version)
-						return match(node, path, leaf)
-					}
-				}
-			}
-			if node.HasCatchall {
-				catchall = true
-			}
-		} else if node.HasCatchall {
-			catchall = true
-		}
-		if catchall {
-			for _, n := range node.Node {
-				if n.path == "*" {
-					// add "*" to context
-					setParam("*", path[0])
-					return checkMethod(n, r.Method)
-				}
-			}
-		}
-		// NotFound
-		if v.NotFoundHandler != nil {
-			return v.NotFoundHandler
-		}
-		return http.NotFoundHandler()
-	}
-
-	// Request-ID
-	var rid string
-	if v.RequestID != "" {
-		if rid = r.Header.Get(v.RequestID); rid != "" {
-			if v.LogRequests {
-				ww.Header().Set(v.RequestID, rid)
-			}
-		}
-	}
-
 	// h http.Handler
-	h := match(node, path, leaf)
+	h := v.match(node, path, leaf, params, r.Method, version)
 
 	// dispatch request
-	if len(params) == 0 {
-		h.ServeHTTP(ww, r)
-	} else {
-		h.ServeHTTP(ww, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
-	}
 	if v.LogRequests {
+		if len(*params) == 0 {
+			h.ServeHTTP(ww, r)
+		} else {
+			h.ServeHTTP(ww, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
+		}
 		log.Printf("%s [%s] %d %d %s %s",
 			r.RemoteAddr,
 			r.URL,
 			ww.Status(),
 			ww.Size(),
-			time.Since(ww.Start()),
-			rid)
+			ww.RequestTime(),
+			ww.RequestID())
+	} else {
+		if len(*params) == 0 {
+			h.ServeHTTP(w, r)
+		} else {
+			h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ParamsKey, params)))
+		}
 	}
 }
 
