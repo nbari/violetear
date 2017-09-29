@@ -169,17 +169,17 @@ func (v *Router) checkMethod(node *Trie, method string) http.Handler {
 }
 
 // match recursively find a handler for the request
-func (v *Router) match(node *Trie, path []string, leaf bool, params *Params, method, version string) http.Handler {
+func (v *Router) match(node *Trie, path []string, leaf bool, params Params, method, version string) (http.Handler, Params) {
 	catchall := false
 	if len(node.Handler) > 0 && leaf {
-		return v.checkMethod(node, method)
+		return v.checkMethod(node, method), params
 	} else if node.HasRegex {
 		for _, n := range node.Node {
 			if strings.HasPrefix(n.path, ":") {
 				rx := v.dynamicRoutes[n.path]
 				if rx.MatchString(path[0]) {
 					// add param to context
-					params.Set(n.path, path[0])
+					params = params.Add(n.path, path[0])
 					path[0] = n.path
 					node, path, leaf, _ := node.Get(path, version)
 					return v.match(node, path, leaf, params, method, version)
@@ -196,16 +196,16 @@ func (v *Router) match(node *Trie, path []string, leaf bool, params *Params, met
 		for _, n := range node.Node {
 			if n.path == "*" {
 				// add "*" to context
-				params.Set("*", path[0])
-				return v.checkMethod(n, method)
+				params = params.Add("*", path[0])
+				return v.checkMethod(n, method), params
 			}
 		}
 	}
 	// NotFound
 	if v.NotFoundHandler != nil {
-		return v.NotFoundHandler
+		return v.NotFoundHandler, params
 	}
-	return http.NotFoundHandler()
+	return http.NotFoundHandler(), params
 }
 
 // ServeHTTP dispatches the handler registered in the matched path
@@ -234,9 +234,6 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ww = NewResponseWriter(w, v.RequestID)
 	}
 
-	// named params "/:foo/:bar"
-	params := &Params{}
-
 	// set version based on the value of "Accept: application/vnd.*"
 	version := r.Header.Get("Accept")
 	if i := strings.LastIndex(version, versionHeader); i != -1 {
@@ -249,21 +246,21 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	node, path, leaf, _ := v.routes.Get(v.splitPath(r.URL.Path), version)
 
 	// h http.Handler
-	h := v.match(node, path, leaf, params, r.Method, version)
+	h, p := v.match(node, path, leaf, Params{}, r.Method, version)
 
 	// dispatch request
 	if v.LogRequests {
-		if len(*params) == 0 {
+		if len(p) == 0 {
 			h.ServeHTTP(ww, r)
 		} else {
-			h.ServeHTTP(ww, r.WithContext(context.WithValue(r.Context(), ParamsKey, *params)))
+			h.ServeHTTP(ww, r.WithContext(context.WithValue(r.Context(), ParamsKey, p)))
 		}
 		v.Logger(ww, r)
 	} else {
-		if len(*params) == 0 {
+		if len(p) == 0 {
 			h.ServeHTTP(w, r)
 		} else {
-			h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ParamsKey, *params)))
+			h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ParamsKey, p)))
 		}
 	}
 }

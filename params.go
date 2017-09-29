@@ -15,8 +15,8 @@ type (
 )
 
 // Set add value to params
-func (p *Params) Set(name, value string) {
-	for i, param := range *p {
+func (p Params) Add(name, value string) Params {
+	for i, param := range p {
 		if param.name == name {
 			switch param.value.(type) {
 			case string:
@@ -24,11 +24,12 @@ func (p *Params) Set(name, value string) {
 			case []string:
 				param.value = append(param.value.([]string), value)
 			}
-			(*p)[i] = param
-			return
+			p[i] = param
+			return p
 		}
 	}
-	*p = append(*p, param{name, value})
+	p = append(p, param{name, value})
+	return p
 }
 
 // GetParam returns a value for the parameter set in path
