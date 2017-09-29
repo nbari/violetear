@@ -14,7 +14,7 @@ type (
 	}
 )
 
-// Set add value to params
+// Add value to params
 func (p Params) Add(name, value string) Params {
 	for i, param := range p {
 		if param.name == name {
