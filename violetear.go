@@ -59,8 +59,8 @@ const (
 
 // Router struct
 type Router struct {
-	// dynamicRoutes set of dynamic routes
-	dynamicRoutes *dynRoutes
+	// dynamicRoutes map of dynamic routes and regular expressions
+	dynamicRoutes dynamicSet
 
 	// Routes to be matched
 	routes *Trie
@@ -91,7 +91,7 @@ type Router struct {
 // New returns a new initialized router.
 func New() *Router {
 	return &Router{
-		dynamicRoutes: &dynRoutes{},
+		dynamicRoutes: dynamicSet{},
 		routes:        &Trie{},
 		Logger:        logger,
 		Verbose:       true,
@@ -110,7 +110,7 @@ func (v *Router) Handle(path string, handler http.Handler, httpMethods ...string
 	// search for dynamic routes
 	for _, p := range pathParts {
 		if strings.HasPrefix(p, ":") {
-			if v.dynamicRoutes.Get(p) == nil {
+			if _, ok := v.dynamicRoutes[p]; !ok {
 				return fmt.Errorf("[%s] not found, need to add it using AddRegex(%q, `your regex`)", p, p)
 			}
 		}
@@ -176,7 +176,7 @@ func (v *Router) match(node *Trie, path []string, leaf bool, params *Params, met
 	} else if node.HasRegex {
 		for _, n := range node.Node {
 			if strings.HasPrefix(n.path, ":") {
-				rx := v.dynamicRoutes.Get(n.path)
+				rx := v.dynamicRoutes[n.path]
 				if rx.MatchString(path[0]) {
 					// add param to context
 					params.Set(n.path, path[0])

@@ -23,9 +23,17 @@ func benchRequest(b *testing.B, router http.Handler, r *http.Request) {
 	}
 }
 
-func BenchmarkRouter(b *testing.B) {
+func BenchmarkRouterStatic(b *testing.B) {
 	router := New()
 	router.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {}, "GET,HEAD")
 	r, _ := http.NewRequest("GET", "/hello", nil)
+	benchRequest(b, router, r)
+}
+
+func BenchmarkRouterDynamic(b *testing.B) {
+	router := New()
+	router.AddRegex(":word", `^\w+$`)
+	router.HandleFunc("/test/:word", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(":word")) }, "GET,HEAD")
+	r, _ := http.NewRequest("GET", "/test/foo/dd", nil)
 	benchRequest(b, router, r)
 }
