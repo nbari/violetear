@@ -12,7 +12,8 @@ func TestXXX(t *testing.T) {
 	router := New()
 	router.AddRegex(":word", `^\w+$`)
 	router.HandleFunc("/test/:word/:word/:word", func(w http.ResponseWriter, r *http.Request) {
-		//	param := GetParam("word", r)
+		param := GetParam("word", r, 3)
+		expect(t, param, "")
 	})
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/test/foo/bar/xxxx", nil)
@@ -26,6 +27,7 @@ func TestGetParam(t *testing.T) {
 		param         string
 		expectedParam string
 		index         int
+		err           bool
 	}{
 		{
 			path:          "/tests/:test_param",
@@ -88,15 +90,35 @@ func TestGetParam(t *testing.T) {
 			path:          "/test/:uuid/:uuid",
 			requestPath:   "/test/78F204D2-26D9-409F-BE81-2E5D061E1FA1/33A7B724-1498-4A5A-B29B-AD4E31824234",
 			param:         "uuid",
-			expectedParam: "",
-			index:         2,
+			expectedParam: "78F204D2-26D9-409F-BE81-2E5D061E1FA1",
+			index:         -1,
 		},
 		{
-			path:          "/test/:uuid/:uuid",
-			requestPath:   "/test/78F204D2-26D9-409F-BE81-2E5D061E1FA1/33A7B724-1498-4A5A-B29B-AD4E31824234",
+			path:          "/test/2/:uuid/:uuid",
+			requestPath:   "/test/2/78F204D2-26D9-409F-BE81-2E5D061E1FA1/33A7B724-1498-4A5A-B29B-AD4E31824234",
 			param:         "uuid",
 			expectedParam: "",
-			index:         3,
+			index:         20,
+		},
+		{
+			path:          "/asterisk/*",
+			requestPath:   "/asterisk/foo",
+			param:         "*",
+			expectedParam: "foo",
+		},
+		{
+			path:          "/asterisk/asterisk/*/*/*",
+			requestPath:   "/test/a/b/c/d/e",
+			param:         "*",
+			expectedParam: "a",
+			err:           true,
+		},
+		{
+			path:          "/asterisk/foo/*/*/*/3",
+			requestPath:   "/test/foo/xxx",
+			param:         "*",
+			expectedParam: "xxx",
+			err:           true,
 		},
 	}
 
@@ -120,7 +142,8 @@ func TestGetParam(t *testing.T) {
 			}
 			expect(t, obtainedParam, v.expectedParam)
 		}
-		router.HandleFunc(v.path, testHandler, "GET")
+		err := router.HandleFunc(v.path, testHandler, "GET")
+		expect(t, err != nil, v.err)
 		w = httptest.NewRecorder()
 		req, _ := http.NewRequest("GET", v.requestPath, nil)
 		router.ServeHTTP(w, req)
@@ -188,6 +211,12 @@ func TestGetParams(t *testing.T) {
 			param:         "uuid",
 			expectedParam: []string{"479BA626-0565-49CF-8852-9576F6C9964F", "479BA626-0565-49CF-8852-9576F6C9964F", "479BA626-0565-49CF-8852-9576F6C9964F"},
 		},
+		{
+			path:          "/test/:uuid/:uuid:uuid",
+			requestPath:   "/test/479BA626-0565-49CF-8852-9576F6C9964F/479BA626-0565-49CF-8852-9576F6C9964F/479BA626-0565-49CF-8852-9576F6C9964F",
+			param:         "uuid",
+			expectedParam: []string{"479BA626-0565-49CF-8852-9576F6C9964F", "479BA626-0565-49CF-8852-9576F6C9964F", "479BA626-0565-49CF-8852-9576F6C9964F"},
+		},
 	}
 
 	router := New()
@@ -204,7 +233,7 @@ func TestGetParams(t *testing.T) {
 	for _, v := range testCases {
 		testHandler := func(w http.ResponseWriter, r *http.Request) {
 			obtainedParams = GetParams(v.param, r)
-			expect(t, obtainedParams, v.expectedParam)
+			expectDeepEqual(t, obtainedParams, v.expectedParam)
 		}
 		router.HandleFunc(v.path, testHandler, "GET")
 		w = httptest.NewRecorder()
@@ -340,4 +369,26 @@ func TestGetParamsDuplicatesNonExistent(t *testing.T) {
 	req, _ := http.NewRequest("GET", request, nil)
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
+}
+
+func TestGetParamWildcard(t *testing.T) {
+	router := New()
+	router.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
+		param := GetParam("*", r)
+		expect(t, "test", param)
+	})
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test/foo/bar/xxxx", nil)
+	router.ServeHTTP(w, req)
+}
+
+func TestGetParamsWildcard(t *testing.T) {
+	router := New()
+	router.HandleFunc("/*", func(w http.ResponseWriter, r *http.Request) {
+		param := GetParams("*", r)
+		expect(t, "test", param[0])
+	})
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test/foo/bar/xxxx", nil)
+	router.ServeHTTP(w, req)
 }
