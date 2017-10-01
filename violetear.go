@@ -179,7 +179,10 @@ func (v *Router) match(node *Trie, path []string, leaf bool, params Params, meth
 				rx := v.dynamicRoutes[n.path]
 				if rx.MatchString(path[0]) {
 					// add param to context
-					params = params.Add(n.path, path[0])
+					if params == nil {
+						params = Params{}
+					}
+					params.Add(n.path, path[0])
 					path[0] = n.path
 					node, path, leaf, _ := node.Get(path, version)
 					return v.match(node, path, leaf, params, method, version)
@@ -196,7 +199,10 @@ func (v *Router) match(node *Trie, path []string, leaf bool, params Params, meth
 		for _, n := range node.Node {
 			if n.path == "*" {
 				// add "*" to context
-				params = params.Add("*", path[0])
+				if params == nil {
+					params = Params{}
+				}
+				params.Add("*", path[0])
 				return v.checkMethod(n, method), params
 			}
 		}
@@ -246,18 +252,18 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	node, path, leaf, _ := v.routes.Get(v.splitPath(r.URL.Path), version)
 
 	// h http.Handler
-	h, p := v.match(node, path, leaf, Params{}, r.Method, version)
+	h, p := v.match(node, path, leaf, nil, r.Method, version)
 
 	// dispatch request
 	if v.LogRequests {
-		if len(p) == 0 {
+		if p == nil {
 			h.ServeHTTP(ww, r)
 		} else {
 			h.ServeHTTP(ww, r.WithContext(context.WithValue(r.Context(), ParamsKey, p)))
 		}
 		v.Logger(ww, r)
 	} else {
-		if len(p) == 0 {
+		if p == nil {
 			h.ServeHTTP(w, r)
 		} else {
 			h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ParamsKey, p)))

@@ -1,12 +1,14 @@
 package violetear
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // Params string/interface map used with context
 type Params map[string]interface{}
 
 // Add param to Params
-func (p Params) Add(k, v string) Params {
+func (p Params) Add(k, v string) {
 	if param, ok := p[k]; ok {
 		switch param.(type) {
 		case string:
@@ -18,7 +20,6 @@ func (p Params) Add(k, v string) Params {
 	} else {
 		p[k] = v
 	}
-	return p
 }
 
 // GetParam returns a value for the parameter set in path
