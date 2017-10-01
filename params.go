@@ -1,34 +1,23 @@
 package violetear
 
-import (
-	"net/http"
-)
+import "net/http"
 
 // Params string/interface map used with context
-type (
-	Params []param
+type Params map[string]interface{}
 
-	param struct {
-		name  string
-		value interface{}
-	}
-)
-
-// Add value to params
-func (p Params) Add(name, value string) Params {
-	for i, param := range p {
-		if param.name == name {
-			switch param.value.(type) {
-			case string:
-				param.value = []string{param.value.(string), value}
-			case []string:
-				param.value = append(param.value.([]string), value)
-			}
-			p[i] = param
-			return p
+// Add param to Params
+func (p Params) Add(k, v string) Params {
+	if param, ok := p[k]; ok {
+		switch param.(type) {
+		case string:
+			param = []string{param.(string), v}
+		case []string:
+			param = append(param.([]string), v)
 		}
+		p[k] = param
+	} else {
+		p[k] = v
 	}
-	p = append(p, param{name, value})
 	return p
 }
 
@@ -37,20 +26,18 @@ func (p Params) Add(name, value string) Params {
 // retrieve the desired value.
 func GetParam(name string, r *http.Request, index ...int) string {
 	params := r.Context().Value(ParamsKey).(Params)
-	for _, param := range params {
-		if param.name == ":"+name {
-			switch p := param.value.(type) {
-			case []string:
-				if len(index) > 0 {
-					if index[0] > len(p) {
-						return ""
-					}
-					return p[index[0]]
+	if param := params[":"+name]; param != nil {
+		switch param := param.(type) {
+		case []string:
+			if len(index) > 0 {
+				if index[0] > len(param) {
+					return ""
 				}
-				return p[0]
-			default:
-				return p.(string)
+				return param[index[0]]
 			}
+			return param[0]
+		default:
+			return param.(string)
 		}
 	}
 	return ""
@@ -59,14 +46,12 @@ func GetParam(name string, r *http.Request, index ...int) string {
 // GetParams returns param or params in a []string
 func GetParams(name string, r *http.Request) []string {
 	params := r.Context().Value(ParamsKey).(Params)
-	for _, param := range params {
-		if param.name == ":"+name {
-			switch p := param.value.(type) {
-			case []string:
-				return p
-			default:
-				return []string{p.(string)}
-			}
+	if param := params[":"+name]; param != nil {
+		switch param := param.(type) {
+		case []string:
+			return param
+		default:
+			return []string{param.(string)}
 		}
 	}
 	return []string{}

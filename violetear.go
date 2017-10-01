@@ -47,15 +47,15 @@ import (
 	"strings"
 )
 
-// key int is unexported to prevent collisions with context keys defined in
-// other packages.
-type key int
-
 // ParamsKey used for the context
 const (
 	ParamsKey     key = 0
 	versionHeader     = "application/vnd."
 )
+
+// key int is unexported to prevent collisions with context keys defined in
+// other packages.
+type key int
 
 // Router struct
 type Router struct {
