@@ -99,18 +99,18 @@ func New() *Router {
 }
 
 // Handle registers the handler for the given pattern (path, http.Handler, methods).
-func (v *Router) Handle(path string, handler http.Handler, httpMethods ...string) error {
+func (r *Router) Handle(path string, handler http.Handler, httpMethods ...string) error {
 	var version string
 	if i := strings.Index(path, "#"); i != -1 {
 		version = path[i+1:]
 		path = path[:i]
 	}
-	pathParts := v.splitPath(path)
+	pathParts := r.splitPath(path)
 
 	// search for dynamic routes
 	for _, p := range pathParts {
 		if strings.HasPrefix(p, ":") {
-			if _, ok := v.dynamicRoutes[p]; !ok {
+			if _, ok := r.dynamicRoutes[p]; !ok {
 				return fmt.Errorf("[%s] not found, need to add it using AddRegex(%q, `your regex`)", p, p)
 			}
 		}
@@ -122,28 +122,28 @@ func (v *Router) Handle(path string, handler http.Handler, httpMethods ...string
 		methods = httpMethods[0]
 	}
 
-	if v.Verbose {
+	if r.Verbose {
 		log.Printf("Adding path: %s [%s] %s", path, methods, version)
 	}
 
-	if err := v.routes.Set(pathParts, handler, methods, version); err != nil {
+	if err := r.routes.Set(pathParts, handler, methods, version); err != nil {
 		return err
 	}
 	return nil
 }
 
 // HandleFunc add a route to the router (path, http.HandlerFunc, methods)
-func (v *Router) HandleFunc(path string, handler http.HandlerFunc, httpMethods ...string) error {
-	return v.Handle(path, handler, httpMethods...)
+func (r *Router) HandleFunc(path string, handler http.HandlerFunc, httpMethods ...string) error {
+	return r.Handle(path, handler, httpMethods...)
 }
 
 // AddRegex adds a ":named" regular expression to the dynamicRoutes
-func (v *Router) AddRegex(name, regex string) error {
-	return v.dynamicRoutes.Set(name, regex)
+func (r *Router) AddRegex(name, regex string) error {
+	return r.dynamicRoutes.Set(name, regex)
 }
 
 // MethodNotAllowed default handler for 405
-func (v *Router) MethodNotAllowed() http.HandlerFunc {
+func (r *Router) MethodNotAllowed() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w,
 			http.StatusText(http.StatusMethodNotAllowed),
@@ -153,7 +153,7 @@ func (v *Router) MethodNotAllowed() http.HandlerFunc {
 }
 
 // checkMethod check if request method is allowed or not
-func (v *Router) checkMethod(node *Trie, method string) http.Handler {
+func (r *Router) checkMethod(node *Trie, method string) http.Handler {
 	for _, h := range node.Handler {
 		if h.Method == "ALL" {
 			return h.Handler
@@ -162,21 +162,21 @@ func (v *Router) checkMethod(node *Trie, method string) http.Handler {
 			return h.Handler
 		}
 	}
-	if v.NotAllowedHandler != nil {
-		return v.NotAllowedHandler
+	if r.NotAllowedHandler != nil {
+		return r.NotAllowedHandler
 	}
-	return v.MethodNotAllowed()
+	return r.MethodNotAllowed()
 }
 
 // match recursively find a handler for the request
-func (v *Router) match(node *Trie, path []string, leaf bool, params Params, method, version string) (http.Handler, Params) {
+func (r *Router) match(node *Trie, path []string, leaf bool, params Params, method, version string) (http.Handler, Params) {
 	catchall := false
 	if len(node.Handler) > 0 && leaf {
-		return v.checkMethod(node, method), params
+		return r.checkMethod(node, method), params
 	} else if node.HasRegex {
 		for _, n := range node.Node {
 			if strings.HasPrefix(n.path, ":") {
-				rx := v.dynamicRoutes[n.path]
+				rx := r.dynamicRoutes[n.path]
 				if rx.MatchString(path[0]) {
 					// add param to context
 					if params == nil {
@@ -185,7 +185,7 @@ func (v *Router) match(node *Trie, path []string, leaf bool, params Params, meth
 					params.Add(n.path, path[0])
 					path[0] = n.path
 					node, path, leaf, _ := node.Get(path, version)
-					return v.match(node, path, leaf, params, method, version)
+					return r.match(node, path, leaf, params, method, version)
 				}
 			}
 		}
@@ -203,24 +203,24 @@ func (v *Router) match(node *Trie, path []string, leaf bool, params Params, meth
 					params = Params{}
 				}
 				params.Add("*", path[0])
-				return v.checkMethod(n, method), params
+				return r.checkMethod(n, method), params
 			}
 		}
 	}
 	// NotFound
-	if v.NotFoundHandler != nil {
-		return v.NotFoundHandler, params
+	if r.NotFoundHandler != nil {
+		return r.NotFoundHandler, params
 	}
 	return http.NotFoundHandler(), params
 }
 
 // ServeHTTP dispatches the handler registered in the matched path
-func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// panic handler
 	defer func() {
 		if err := recover(); err != nil {
-			if v.PanicHandler != nil {
-				v.PanicHandler(w, r)
+			if r.PanicHandler != nil {
+				r.PanicHandler(w, req)
 			} else {
 				http.Error(w, http.StatusText(500), http.StatusInternalServerError)
 			}
@@ -228,20 +228,20 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Request-ID
-	if v.RequestID != "" {
-		if rid := r.Header.Get(v.RequestID); rid != "" {
-			w.Header().Set(v.RequestID, rid)
+	if r.RequestID != "" {
+		if rid := req.Header.Get(r.RequestID); rid != "" {
+			w.Header().Set(r.RequestID, rid)
 		}
 	}
 
 	// wrap ResponseWriter
 	var ww *ResponseWriter
-	if v.LogRequests {
-		ww = NewResponseWriter(w, v.RequestID)
+	if r.LogRequests {
+		ww = NewResponseWriter(w, r.RequestID)
 	}
 
 	// set version based on the value of "Accept: application/vnd.*"
-	version := r.Header.Get("Accept")
+	version := req.Header.Get("Accept")
 	if i := strings.LastIndex(version, versionHeader); i != -1 {
 		version = version[len(versionHeader)+i:]
 	} else {
@@ -249,30 +249,30 @@ func (v *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// _ path never empty, defaults to ("/")
-	node, path, leaf, _ := v.routes.Get(v.splitPath(r.URL.Path), version)
+	node, path, leaf, _ := r.routes.Get(r.splitPath(req.URL.Path), version)
 
 	// h http.Handler
-	h, p := v.match(node, path, leaf, nil, r.Method, version)
+	h, p := r.match(node, path, leaf, nil, req.Method, version)
 
 	// dispatch request
-	if v.LogRequests {
+	if r.LogRequests {
 		if p == nil {
-			h.ServeHTTP(ww, r)
+			h.ServeHTTP(ww, req)
 		} else {
-			h.ServeHTTP(ww, r.WithContext(context.WithValue(r.Context(), ParamsKey, p)))
+			h.ServeHTTP(ww, req.WithContext(context.WithValue(req.Context(), ParamsKey, p)))
 		}
-		v.Logger(ww, r)
+		r.Logger(ww, req)
 	} else {
 		if p == nil {
-			h.ServeHTTP(w, r)
+			h.ServeHTTP(w, req)
 		} else {
-			h.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ParamsKey, p)))
+			h.ServeHTTP(w, req.WithContext(context.WithValue(req.Context(), ParamsKey, p)))
 		}
 	}
 }
 
 // splitPath returns an slice of the path
-func (v *Router) splitPath(p string) []string {
+func (r *Router) splitPath(p string) []string {
 	pathParts := strings.FieldsFunc(p, func(c rune) bool {
 		return c == '/'
 	})
