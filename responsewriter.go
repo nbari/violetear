@@ -19,6 +19,7 @@ func NewResponseWriter(w http.ResponseWriter, rid string) *ResponseWriter {
 		ResponseWriter: w,
 		requestID:      rid,
 		start:          time.Now(),
+		status:         http.StatusOK,
 	}
 }
 
@@ -39,15 +40,12 @@ func (w *ResponseWriter) RequestTime() string {
 
 // RequestID retrieve the Request ID
 func (w *ResponseWriter) RequestID() string {
-	return w.Header().Get(w.requestID)
+	return w.requestID
 }
 
 // Write satisfies the http.ResponseWriter interface and
 // captures data written, in bytes
 func (w *ResponseWriter) Write(data []byte) (int, error) {
-	if w.status == 0 {
-		w.WriteHeader(http.StatusOK)
-	}
 	size, err := w.ResponseWriter.Write(data)
 	w.size += size
 	return size, err

@@ -228,8 +228,9 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}()
 
 	// Request-ID
+	var rid string
 	if r.RequestID != "" {
-		if rid := req.Header.Get(r.RequestID); rid != "" {
+		if rid = req.Header.Get(r.RequestID); rid != "" {
 			w.Header().Set(r.RequestID, rid)
 		}
 	}
@@ -237,7 +238,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// wrap ResponseWriter
 	var ww *ResponseWriter
 	if r.LogRequests {
-		ww = NewResponseWriter(w, r.RequestID)
+		ww = NewResponseWriter(w, rid)
 	}
 
 	// set version based on the value of "Accept: application/vnd.*"
