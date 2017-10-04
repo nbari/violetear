@@ -168,24 +168,26 @@ func (r *Router) checkMethod(node *Trie, method string) http.Handler {
 	return r.MethodNotAllowed()
 }
 
-// match recursively find a handler for the request
-func (r *Router) match(node *Trie, path []string, leaf bool, params Params, method, version string) (http.Handler, Params) {
+// dispatch request
+func (r *Router) dispatch(node *Trie, key, path, method, version string, leaf bool, params Params) (http.Handler, Params) {
 	catchall := false
 	if len(node.Handler) > 0 && leaf {
-		return r.checkMethod(node, method), params
+		return r.checkMethod(node, method), nil
 	} else if node.HasRegex {
 		for _, n := range node.Node {
 			if strings.HasPrefix(n.path, ":") {
 				rx := r.dynamicRoutes[n.path]
-				if rx.MatchString(path[0]) {
+				if rx.MatchString(key) {
 					// add param to context
 					if params == nil {
 						params = Params{}
 					}
-					params.Add(n.path, path[0])
-					path[0] = n.path
-					node, path, leaf, _ := node.Get(path, version)
-					return r.match(node, path, leaf, params, method, version)
+					params.Add(n.path, key)
+					if path == "" {
+						return r.checkMethod(n, method), params
+					}
+					node, key, path, leaf := n.Get(n.path+path, version)
+					return r.dispatch(node, key, path, method, version, leaf, params)
 				}
 			}
 		}
@@ -202,7 +204,7 @@ func (r *Router) match(node *Trie, path []string, leaf bool, params Params, meth
 				if params == nil {
 					params = Params{}
 				}
-				params.Add("*", path[0])
+				params.Add("*", key)
 				return r.checkMethod(n, method), params
 			}
 		}
@@ -249,11 +251,10 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		version = ""
 	}
 
-	// _ path never empty, defaults to ("/")
-	node, path, leaf, _ := r.routes.Get(r.routes.Split(req.URL.Path), version)
+	node, key, path, leaf := r.routes.Get(req.URL.Path, version)
 
 	// h http.Handler
-	h, p := r.match(node, path, leaf, nil, req.Method, version)
+	h, p := r.dispatch(node, key, path, req.Method, version, leaf, nil)
 
 	// dispatch request
 	if r.LogRequests {

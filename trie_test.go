@@ -1,9 +1,6 @@
 package violetear
 
-import (
-	"testing"
-)
-
+/*
 func TestTrieSetEmpty(t *testing.T) {
 	trie := &Trie{}
 	err := trie.Set([]string{}, nil, "ALL", "")
@@ -213,3 +210,4 @@ func TestTrieGet(t *testing.T) {
 	expect(t, len(n.Node), 2)
 	expect(t, n.HasRegex, false)
 }
+*/

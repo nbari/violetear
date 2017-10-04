@@ -1,7 +1,6 @@
 package violetear
 
 import (
-	"bytes"
 	"errors"
 	"net/http"
 	"strings"
@@ -80,42 +79,37 @@ func (t *Trie) Set(path []string, handler http.Handler, method, version string) 
 }
 
 // Get returns a node
-func (t *Trie) Get(path []string, version string) (trie *Trie, p []string, leaf bool, err error) {
-	if len(path) == 0 {
-		err = errors.New("path cannot be empty")
-		return
-	}
-
-	key := path[0]
-	newpath := path[1:]
-
-	if val, ok := t.contains(key, version); ok {
-		if len(newpath) == 0 {
-			return val, path, true, nil
+func (t *Trie) Get(path, version string) (*Trie, string, string, bool) {
+	var key string
+	if path != "" {
+		for i := 0; i < len(path); i++ {
+			if path[i] == '/' && i > 0 {
+				key = path[1:i]
+				path = path[i:]
+				break
+			} else if path[i] == '*' {
+				key = "*"
+				path = ""
+				break
+			}
 		}
-		return val.Get(newpath, version)
+	} else {
+		key = "/"
 	}
-
-	return t, path, false, nil
-}
-
-// Split path by "/"
-func (t *Trie) Split(path string) []string {
-	if path == "" {
-		return []string{"/"}
+	if key == "" && len(path) > 0 {
+		key = path[1:]
+		path = ""
 	}
-	var key bytes.Buffer
-	for i, rune := range path {
-		if rune == '/' && i > 0 {
-			return []string{key.String(), path[i:]}
-		} else if rune == '*' {
-			return []string{"*"}
-		} else if rune != '/' {
-			key.WriteRune(rune)
+	if path == "/" {
+		path = ""
+	}
+	// search the key recursively on the tree
+	if node, ok := t.contains(key, version); ok {
+		if path == "" {
+			return node, key, path, true
 		}
+		return node.Get(path, version)
 	}
-	if key.Len() > 0 {
-		return []string{key.String()}
-	}
-	return nil
+	// if not fount check for catchall or regex
+	return t, key, path, false
 }
