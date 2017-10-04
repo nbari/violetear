@@ -1,6 +1,7 @@
 package violetear
 
 import (
+	"bytes"
 	"errors"
 	"net/http"
 	"strings"
@@ -96,4 +97,25 @@ func (t *Trie) Get(path []string, version string) (trie *Trie, p []string, leaf 
 	}
 
 	return t, path, false, nil
+}
+
+// Split path by "/"
+func (t *Trie) Split(path string) []string {
+	if path == "" {
+		return []string{"/"}
+	}
+	var key bytes.Buffer
+	for i, rune := range path {
+		if rune == '/' && i > 0 {
+			return []string{key.String(), path[i:]}
+		} else if rune == '*' {
+			return []string{"*"}
+		} else if rune != '/' {
+			key.WriteRune(rune)
+		}
+	}
+	if key.Len() > 0 {
+		return []string{key.String()}
+	}
+	return nil
 }

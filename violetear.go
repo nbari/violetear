@@ -250,7 +250,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	// _ path never empty, defaults to ("/")
-	node, path, leaf, _ := r.routes.Get(r.splitPath(req.URL.Path), version)
+	node, path, leaf, _ := r.routes.Get(r.routes.Split(req.URL.Path), version)
 
 	// h http.Handler
 	h, p := r.match(node, path, leaf, nil, req.Method, version)
