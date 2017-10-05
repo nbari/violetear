@@ -1,6 +1,9 @@
 package violetear
 
-/*
+import (
+	"testing"
+)
+
 func TestTrieSetEmpty(t *testing.T) {
 	trie := &Trie{}
 	err := trie.Set([]string{}, nil, "ALL", "")
@@ -98,116 +101,149 @@ func TestTrieGet(t *testing.T) {
 	err = trie.Set([]string{"alpha", "*"}, nil, "ALL", "")
 	expect(t, err, nil)
 
-	_, _, _, err = trie.Get([]string{}, "")
-	if err == nil {
-		t.Error(err)
-	}
+	_, k, p, l := trie.Get("", "")
+	expect(t, k, "")
+	expect(t, p, "")
+	expect(t, l, false)
 
-	n, p, l, err := trie.Get([]string{"*"}, "")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{"*"})
-	expect(t, l, true)
-	n, p, l, err = trie.Get([]string{"*"}, "v5")
-	expect(t, err, nil)
-	n, p, l, err = trie.Get([]string{"*"}, "v4")
-	expect(t, err, nil)
-	n, p, l, err = trie.Get([]string{"*"}, "v3")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{"*"})
+	_, k, p, l = trie.Get("*", "")
+	expect(t, k, "*")
+	expect(t, p, "")
 	expect(t, l, true)
 
-	n, p, l, err = trie.Get([]string{"not_found"}, "")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{"not_found"})
+	_, k, p, l = trie.Get("*", "v5")
+	expect(t, k, "*")
+	expect(t, p, "")
+	expect(t, l, false)
+
+	_, k, p, l = trie.Get("*", "v4")
+	expect(t, k, "*")
+	expect(t, p, "")
+	expect(t, l, false)
+
+	_, k, p, l = trie.Get("*", "v3")
+	expect(t, k, "*")
+	expect(t, p, "")
+	expect(t, l, true)
+
+	n, k, p, l := trie.Get("not_found", "")
+	expect(t, k, "not_found")
+	expect(t, p, "")
 	expect(t, l, false)
 	expect(t, n.HasRegex, true)
 
-	n, p, l, err = trie.Get([]string{":dynamic"}, "")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{":dynamic"})
-	expect(t, l, true)
-	n, p, l, err = trie.Get([]string{":dynamic"}, "v3")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{":dynamic"})
+	n, k, p, l = trie.Get(":dynamic", "")
+	expect(t, k, ":dynamic")
+	expect(t, p, "")
 	expect(t, l, true)
 
-	n, p, l, err = trie.Get([]string{"root"}, "")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{"root"})
+	n, k, p, l = trie.Get(":dynamic", "v3")
+	expect(t, k, ":dynamic")
+	expect(t, p, "")
+	expect(t, l, true)
+
+	n, k, p, l = trie.Get("root", "")
+	expect(t, k, "root")
+	expect(t, p, "")
 	expect(t, l, true)
 	expect(t, len(n.Node), 4)
 
-	n, p, l, err = trie.Get([]string{"root", "v3"}, "v3")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{"v3"})
+	n, k, p, l = trie.Get("root/v3", "v3")
+	expect(t, k, "v3")
+	expect(t, p, "")
 	expect(t, l, false)
 	expect(t, len(n.Node), 1)
 
-	n, p, l, err = trie.Get([]string{"root", "alpha"}, "")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{"alpha"})
+	n, k, p, l = trie.Get("root/alpha", "")
+	expect(t, k, "alpha")
+	expect(t, p, "")
 	expect(t, l, true)
 	expect(t, len(n.Node), 2)
 
-	n, p, l, err = trie.Get([]string{"root", "not_found"}, "")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{"not_found"})
+	n, k, p, l = trie.Get("root/not_found", "")
+	expect(t, k, "not_found")
+	expect(t, p, "")
 	expect(t, l, false)
 	expect(t, len(n.Node), 4)
 
-	n, p, l, err = trie.Get([]string{"root", "alpha1"}, "")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{"alpha1"})
+	n, k, p, l = trie.Get("root/alpha1", "")
+	expect(t, k, "alpha1")
+	expect(t, p, "")
 	expect(t, l, true)
 	expect(t, len(n.Node), 1)
 
-	n, p, l, err = trie.Get([]string{"root", "alpha1", "any"}, "")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{"any"})
+	n, k, p, l = trie.Get("root/alpha1/any", "")
+	expect(t, k, "any")
+	expect(t, p, "")
 	expect(t, l, false)
 	expect(t, len(n.Node), 1)
 	expect(t, n.HasRegex, false)
 
-	n, p, l, err = trie.Get([]string{"root", "alpha2", "any"}, "")
+	n, k, p, l = trie.Get("root/alpha2/any", "")
+	expect(t, k, "any")
+	expect(t, p, "")
 	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{"any"})
 	expect(t, l, false)
 	expect(t, len(n.Node), 1)
 	expect(t, n.HasRegex, true)
 
-	n, p, l, err = trie.Get([]string{"root", "alpha", "beta"}, "")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{"beta"})
+	n, k, p, l = trie.Get("root/alpha/beta", "")
+	expect(t, k, "beta")
+	expect(t, p, "")
 	expect(t, l, true)
 	expect(t, len(n.Node), 1)
 	expect(t, n.HasRegex, false)
 
-	n, p, l, err = trie.Get([]string{"root", "alpha", "beta", "gamma"}, "")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{"gamma"})
+	n, k, p, l = trie.Get("root/alpha/beta/gamma", "")
+	expect(t, k, "gamma")
+	expect(t, p, "")
 	expect(t, l, true)
 	expect(t, len(n.Node), 0)
 	expect(t, n.HasRegex, false)
 
-	n, p, l, err = trie.Get([]string{"root", "alphaA", "betaB", "gammaC"}, "")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{"alphaA", "betaB", "gammaC"})
+	n, k, p, l = trie.Get("root/alphaA/betaB/gammaC", "")
+	expect(t, k, "alphaA")
+	expect(t, p, "/betaB/gammaC")
 	expect(t, l, false)
 	expect(t, len(n.Node), 4)
 	expect(t, n.HasRegex, false)
 
-	n, p, l, err = trie.Get([]string{"root", "alpha", "betaB", "gammaC"}, "")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{"betaB", "gammaC"})
+	n, k, p, l = trie.Get("root/alpha/betaB/gammaC", "")
+	expect(t, k, "betaB")
+	expect(t, p, "/gammaC")
 	expect(t, l, false)
 	expect(t, len(n.Node), 2)
 	expect(t, n.HasRegex, false)
 
-	n, p, l, err = trie.Get([]string{"root", "alpha", "betaB", "gamma", "delta"}, "")
-	expect(t, err, nil)
-	expectDeepEqual(t, p, []string{"betaB", "gamma", "delta"})
+	n, k, p, l = trie.Get("root/alpha/betaB/gamma/delta", "")
+	expect(t, k, "betaB")
+	expect(t, p, "/gamma/delta")
 	expect(t, l, false)
 	expect(t, len(n.Node), 2)
 	expect(t, n.HasRegex, false)
 }
-*/
+
+func TestSplitPath(t *testing.T) {
+	var testPaths = []struct {
+		in  string
+		out []string
+	}{
+		{"/", []string{"/", ""}},
+		{"//", []string{"/", ""}},
+		{"///", []string{"/", ""}},
+		{"////", []string{"/", ""}},
+		{"/////", []string{"/", ""}},
+		{"/hello", []string{"hello", ""}},
+		{"/hello/world", []string{"hello", "/world"}},
+		{"/hello/:world", []string{"hello", "/:world"}},
+		{"*", []string{"*", ""}},
+		{"/?foo=bar", []string{"?foo=bar", ""}},
+	}
+
+	trie := &Trie{}
+	for _, tt := range testPaths {
+		k, p := trie.SplitPath(tt.in)
+		expect(t, k, tt.out[0])
+		expect(t, p, tt.out[1])
+	}
+}

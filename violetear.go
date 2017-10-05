@@ -172,7 +172,7 @@ func (r *Router) checkMethod(node *Trie, method string) http.Handler {
 func (r *Router) dispatch(node *Trie, key, path, method, version string, leaf bool, params Params) (http.Handler, Params) {
 	catchall := false
 	if len(node.Handler) > 0 && leaf {
-		return r.checkMethod(node, method), nil
+		return r.checkMethod(node, method), params
 	} else if node.HasRegex {
 		for _, n := range node.Node {
 			if strings.HasPrefix(n.path, ":") {
@@ -248,9 +248,10 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		version = ""
 	}
 
+	// query the path from left to right
 	node, key, path, leaf := r.routes.Get(req.URL.Path, version)
 
-	// h http.Handler
+	// dispatch the request
 	h, p := r.dispatch(node, key, path, req.Method, version, leaf, nil)
 
 	// dispatch request

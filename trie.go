@@ -92,10 +92,13 @@ func (t *Trie) Get(path, version string) (*Trie, string, string, bool) {
 	return t, key, path, false
 }
 
+// SplitPath returns first element of path and remaining path
 func (t *Trie) SplitPath(path string) (string, string) {
 	var key string
 	if path == "" {
 		return key, path
+	} else if path == "/" {
+		return path, ""
 	}
 	for i := 0; i < len(path); i++ {
 		if path[i] == '/' {
@@ -105,9 +108,6 @@ func (t *Trie) SplitPath(path string) (string, string) {
 			if i > 0 {
 				key = path[:i]
 				path = path[i:]
-				if key == "" && path != "" {
-					return t.SplitPath(path)
-				}
 				if path == "/" {
 					return key, ""
 				}

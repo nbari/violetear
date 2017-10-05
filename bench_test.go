@@ -1,16 +1,15 @@
-// go test -run=BenchmarkRouter -bench=.
-// go test -bench=.
-// go test -bench=BenchmarkRouter
+// go test -run=^$ -bench=BenchmarkRouterStatic
 
 package violetear
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
 func benchRequest(b *testing.B, router http.Handler, r *http.Request) {
-	w := &ResponseWriter{}
+	w := httptest.NewRecorder()
 	u := r.URL
 	rq := u.RawQuery
 	r.RequestURI = u.RequestURI()
