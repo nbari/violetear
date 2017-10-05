@@ -80,29 +80,7 @@ func (t *Trie) Set(path []string, handler http.Handler, method, version string) 
 
 // Get returns a node
 func (t *Trie) Get(path, version string) (*Trie, string, string, bool) {
-	var key string
-	if path != "" {
-		for i := 0; i < len(path); i++ {
-			if path[i] == '/' && i > 0 {
-				key = path[1:i]
-				path = path[i:]
-				break
-			} else if path[i] == '*' {
-				key = "*"
-				path = ""
-				break
-			}
-		}
-	} else {
-		key = "/"
-	}
-	if key == "" && len(path) > 0 {
-		key = path[1:]
-		path = ""
-	}
-	if path == "/" {
-		path = ""
-	}
+	key, path := t.SplitPath(path)
 	// search the key recursively on the tree
 	if node, ok := t.contains(key, version); ok {
 		if path == "" {
@@ -112,4 +90,30 @@ func (t *Trie) Get(path, version string) (*Trie, string, string, bool) {
 	}
 	// if not fount check for catchall or regex
 	return t, key, path, false
+}
+
+func (t *Trie) SplitPath(path string) (string, string) {
+	var key string
+	if path == "" {
+		return key, path
+	}
+	for i := 0; i < len(path); i++ {
+		if path[i] == '/' {
+			if i == 0 {
+				return t.SplitPath(path[1:])
+			}
+			if i > 0 {
+				key = path[:i]
+				path = path[i:]
+				if key == "" && path != "" {
+					return t.SplitPath(path)
+				}
+				if path == "/" {
+					return key, ""
+				}
+				return key, path
+			}
+		}
+	}
+	return path, ""
 }

@@ -183,10 +183,7 @@ func (r *Router) dispatch(node *Trie, key, path, method, version string, leaf bo
 						params = Params{}
 					}
 					params.Add(n.path, key)
-					if path == "" {
-						return r.checkMethod(n, method), params
-					}
-					node, key, path, leaf := n.Get(n.path+path, version)
+					node, key, path, leaf := node.Get(n.path+path, version)
 					return r.dispatch(node, key, path, method, version, leaf, params)
 				}
 			}
