@@ -142,7 +142,7 @@ func TestResponseWriterNoLogger(t *testing.T) {
 	expect(t, w.HeaderMap.Get("rid"), "123")
 }
 
-func TestResponseWriterNoLogger455(t *testing.T) {
+func TestResponseWriterNoLogger405(t *testing.T) {
 	router := New()
 	router.LogRequests = false
 	router.RequestID = "rid"
@@ -155,4 +155,8 @@ func TestResponseWriterNoLogger455(t *testing.T) {
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 405)
 	expect(t, w.HeaderMap.Get("rid"), "123")
+}
+
+func TestResponseWriterLogger499(t *testing.T) {
+	// TODO
 }

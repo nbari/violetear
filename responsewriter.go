@@ -15,12 +15,20 @@ type ResponseWriter struct {
 
 // NewResponseWriter returns ResponseWriter
 func NewResponseWriter(w http.ResponseWriter, rid string) *ResponseWriter {
-	return &ResponseWriter{
+	rw := &ResponseWriter{
 		ResponseWriter: w,
 		requestID:      rid,
 		start:          time.Now(),
 		status:         http.StatusOK,
 	}
+	if notify, ok := w.(http.CloseNotifier); ok {
+		notify := notify.CloseNotify()
+		go func() {
+			<-notify
+			rw.status = 499
+		}()
+	}
+	return rw
 }
 
 // Status provides an easy way to retrieve the status code
