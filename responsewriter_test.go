@@ -170,7 +170,8 @@ func TestResponseWriterLogger499(t *testing.T) {
 	})
 	ts := httptest.NewServer(router)
 	defer ts.Close()
-	client := ts.Client()
-	client.Timeout = time.Duration(time.Millisecond)
+	client := &http.Client{
+		Timeout: time.Duration(time.Millisecond),
+	}
 	client.Get(ts.URL)
 }
