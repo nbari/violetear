@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestResponseWriterStatus(t *testing.T) {
@@ -158,5 +159,18 @@ func TestResponseWriterNoLogger405(t *testing.T) {
 }
 
 func TestResponseWriterLogger499(t *testing.T) {
-	// TODO
+	router := New()
+	router.Verbose = false
+	router.LogRequests = true
+	router.Logger = func(w *ResponseWriter, r *http.Request) {
+		expect(t, w.Status(), 499)
+	}
+	router.HandleFunc("*", func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(10 * time.Millisecond)
+	})
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+	client := ts.Client()
+	client.Timeout = time.Duration(time.Millisecond)
+	client.Get(ts.URL)
 }
