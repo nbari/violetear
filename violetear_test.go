@@ -1,14 +1,19 @@
 package violetear
 
 import (
+	"bytes"
+	"context"
 	"crypto/rand"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"runtime"
 	"testing"
+
+	"github.com/nbari/violetear/middleware"
 )
 
 /* Test Helpers */
@@ -206,7 +211,9 @@ func TestRouter(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/hello", nil)
 
 	router.ServeHTTP(w, req)
-	expect(t, w.Code, http.StatusOK)
+
+	res := w.Result()
+	expect(t, res.StatusCode, http.StatusOK)
 	expect(t, len(w.HeaderMap), 0)
 }
 
@@ -246,7 +253,8 @@ func TestPanic(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/panic", nil)
 
 	router.ServeHTTP(w, req)
-	expect(t, w.Code, http.StatusInternalServerError)
+	res := w.Result()
+	expect(t, res.StatusCode, http.StatusInternalServerError)
 }
 
 func TestPanicHandler(t *testing.T) {
@@ -260,31 +268,70 @@ func TestPanicHandler(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/panic", nil)
 
 	router.ServeHTTP(w, req)
-	expect(t, w.Code, http.StatusInternalServerError)
-	expect(t, w.Body.String(), "ne ne ne\n")
+	res := w.Result()
+	expect(t, res.StatusCode, http.StatusInternalServerError)
+	defer res.Body.Close()
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		t.Fatalf("could not read response: %v", err)
+	}
+	expect(t, string(b), "ne ne ne\n")
 }
 
 func TestHandleFunc(t *testing.T) {
-	router := New()
-	err := router.HandleFunc("/:none", func(w http.ResponseWriter, r *http.Request) {})
-	if err == nil {
-		t.Error(err)
+	tt := []struct {
+		name string
+		path string
+		err  bool
+	}{
+		{"addregex", "/:none", true},
+		{"catchall error", "/*/test", true},
+		{"catchall at root", "*", false},
+		{"catchall at the end", "/test/*", false},
+		{"static", "/verbose", false},
 	}
-	err = router.HandleFunc("/*/test", func(w http.ResponseWriter, r *http.Request) {})
-	if err == nil {
-		t.Error(err)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			router := New()
+			err := router.HandleFunc(tc.path, func(w http.ResponseWriter, r *http.Request) {})
+			expect(t, err != nil, tc.err)
+		})
 	}
-	router.HandleFunc("/verbose", func(w http.ResponseWriter, r *http.Request) {})
 }
 
 func TestNotAllowedHandler(t *testing.T) {
-	router := New()
-	router.NotAllowedHandler = myMethodNotAllowed()
-	router.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {}, "GET")
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/get", nil)
-	router.ServeHTTP(w, req)
-	expect(t, w.Code, 405)
+	tt := []struct {
+		name          string
+		path          string
+		handlerMethod string
+		reqMethod     string
+		expectCode    int
+	}{
+		{"only get", "/", "GET", "GET", 200},
+		{"only get and head", "/", "GET,HEAD", "HEAD", 200},
+		{"only get", "/", "GET", "POST", 405},
+		{"only get and head", "/", "GET,HEAD", "POST", 405},
+		{"only head", "/get", "HEAD", "GET", 405},
+		{"only head", "/get", "HEAD", "HEAD", 200},
+		{"not post", "/get", "GET,HEAD,PUT,DELETE,OPTIONS", "DELETE", 200},
+		{"not post", "/get", "GET,HEAD,PUT,DELETE,OPTIONS", "GET", 200},
+		{"not post", "/get", "GET,HEAD,PUT,DELETE,OPTIONS", "HEAD", 200},
+		{"not post", "/get", "GET,HEAD,PUT,DELETE,OPTIONS", "OPTIONS", 200},
+		{"not post", "/get", "GET,HEAD,PUT,DELETE,OPTIONS", "PUT", 200},
+		{"not post", "/get", "GET,HEAD,PUT,DELETE,OPTIONS", "POST", 405},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			router := New()
+			router.NotAllowedHandler = myMethodNotAllowed()
+			router.HandleFunc(tc.path, func(w http.ResponseWriter, r *http.Request) {}, tc.handlerMethod)
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest(tc.reqMethod, tc.path, nil)
+			router.ServeHTTP(w, req)
+			res := w.Result()
+			expect(t, res.StatusCode, tc.expectCode)
+		})
+	}
 }
 
 func TestNotFoundHandler(t *testing.T) {
@@ -383,7 +430,6 @@ func TestHandleFuncMethods(t *testing.T) {
 	expect(t, w.Code, 405)
 }
 
-/*
 func TestContextNamedParams(t *testing.T) {
 	router := New()
 
@@ -470,63 +516,56 @@ func TestContextMiddleware(t *testing.T) {
 }
 
 func TestContextNamedParamsSlice(t *testing.T) {
-	router := New()
-
-	for _, v := range dynamicRoutes {
-		router.AddRegex(v.name, v.regex)
+	tt := []struct {
+		name      string
+		reqMethod string
+		params    int
+		code      int
+	}{
+		{"1 uuid", "GET", 1, 200},
+		{"2 uuids", "GET", 2, 200},
+		{"3 uuids", "GET", 3, 200},
+		{"50 uuids", "GET", 50, 200},
+		{"100 uuids", "GET", 100, 200},
 	}
 
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		params := r.Context().Value(ParamsKey).(Params)
-		uuid := params[":uuid"].([]string)
-		expect(t, uuid[0], "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
-		expect(t, uuid[1], "12EC2DA8-403D-4C8B-AE39-D011762181A0")
-		expect(t, uuid[2], "E09533B1-57A8-449B-9A67-4C52C7B41CC1")
-		w.Write([]byte("named params"))
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			router := New()
+			for _, v := range dynamicRoutes {
+				router.AddRegex(v.name, v.regex)
+			}
+			params := make([]string, tc.params)
+			path := "/test/"
+			request := "/test"
+			for i := 0; i < tc.params; i++ {
+				params[i] = genUUID()
+				path += ":uuid/"
+				request = request + "/" + params[i]
+			}
+			handler := func(w http.ResponseWriter, r *http.Request) {
+				p := r.Context().Value(ParamsKey).(Params)
+				if tc.params == 1 {
+					uuid := p[":uuid"]
+					expect(t, uuid, params[0])
+				} else {
+					uuids := p[":uuid"].([]string)
+					expect(t, len(uuids), tc.params)
+					for i := 0; i < tc.params; i++ {
+						expect(t, uuids[i], params[i])
+					}
+				}
+			}
+			router.HandleFunc(path, handler)
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest(tc.reqMethod, request, nil)
+			router.ServeHTTP(w, req)
+			res := w.Result()
+			expect(t, res.StatusCode, tc.code)
+		})
 	}
-
-	router.HandleFunc("/test/:uuid/:uuid/:uuid/", handler)
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/test/A97F0AF3-043D-4376-82BE-CD6C1A524E0E/12EC2DA8-403D-4C8B-AE39-D011762181A0/E09533B1-57A8-449B-9A67-4C52C7B41CC1", nil)
-	router.ServeHTTP(w, req)
-	expect(t, w.Code, 200)
 }
 
-func TestContextManyNamedParamsSlice(t *testing.T) {
-	var uuids []string
-	request := "/test/"
-	requestHandler := "/test/"
-	for i := 0; i <= 10; i++ {
-		uuid := genUUID()
-		uuids = append(uuids, uuid)
-		request += fmt.Sprintf("%s/", uuid)
-		requestHandler += ":uuid/"
-	}
-
-	router := New()
-
-	for _, v := range dynamicRoutes {
-		router.AddRegex(v.name, v.regex)
-	}
-
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		params := r.Context().Value(ParamsKey).(Params)
-		uuid := params[":uuid"].([]string)
-		for i := 0; i <= 10; i++ {
-			expect(t, uuid[i], uuids[i])
-		}
-		w.Write([]byte("named params"))
-	}
-
-	router.HandleFunc(requestHandler, handler)
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", request, nil)
-	router.ServeHTTP(w, req)
-	expect(t, w.Code, 200)
-}
-*/
 func TestVersioning(t *testing.T) {
 	router := New()
 	for _, v := range dynamicRoutes {
@@ -565,71 +604,48 @@ func TestVersioning(t *testing.T) {
 	router.HandleFunc("/catch/*", getCatch, "GET")
 	router.HandleFunc("/catch/*#violetear.v2", getCatchv2, "GET")
 
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/", nil)
-	router.ServeHTTP(w, req)
-	expect(t, w.Body.String(), "I handle GET")
+	tt := []struct {
+		name      string
+		path      string
+		reqMethod string
+		version   string
+		body      string
+		code      int
+	}{
+		{"get /", "/", "GET", "", "I handle GET", 200},
+		{"get / 405", "/", "POST", "", "Method Not Allowed", 405},
+		{"get / with version XX", "/", "GET", "application/vnd.violetear.XX", "404 page not found", 404},
+		{"get / with version v2", "/", "GET", "application/vnd.violetear.v2", "I handle GET v2", 200},
+		{"get / with version v2 405", "/", "POST", "application/vnd.violetear.v2", "Method Not Allowed", 405},
+		{"get /ip", "/127.0.0.1", "GET", "", "ip", 200},
+		{"get /ip version XX", "/127.0.0.1", "GET", "application/vnd.violetear.XX", "404 page not found", 404},
+		{"get /ip version v2", "/127.0.0.1", "GET", "application/vnd.violetear.v2", "ip v2", 200},
+		{"get /uuid", "/AA4C820E-4D9D-4385-B796-77D12C825306", "GET", "", "uuid", 200},
+		{"get /uuid version XX", "/AA4C820E-4D9D-4385-B796-77D12C825306", "GET", "application/vnd.violetear.XX", "404 page not found", 404},
+		{"get /uuid version v2", "/AA4C820E-4D9D-4385-B796-77D12C825306", "GET", "application/vnd.violetear.v2", "uuid v2", 200},
+		{"get /catch/any", "/catch/any", "GET", "", "*", 200},
+		{"get /catch/any 405", "/catch/any", "POST", "", "Method Not Allowed", 405},
+		{"get /catch/any version XX", "/catch/any", "GET", "application/vnd.violetear.XX", "404 page not found", 404},
+		{"get /catch/any version v2", "/catch/any", "GET", "application/vnd.violetear.v2", "* v2", 200},
+		{"get /catch/any version v2 405", "/catch/any", "POST", "application/vnd.violetear.v2", "Method Not Allowed", 405},
+	}
 
-	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/", nil)
-	req.Header.Set("Accept", "application/vnd.violetear.XX")
-	router.ServeHTTP(w, req)
-	expect(t, w.Code, 404)
-
-	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/", nil)
-	req.Header.Set("Accept", "application/vnd.violetear.v2")
-	router.ServeHTTP(w, req)
-	expect(t, w.Body.String(), "I handle GET v2")
-
-	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/127.0.0.1", nil)
-	router.ServeHTTP(w, req)
-	expect(t, w.Body.String(), "ip")
-
-	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/127.0.0.1", nil)
-	req.Header.Set("Accept", "application/vnd.violetear.XX")
-	router.ServeHTTP(w, req)
-	expect(t, w.Code, 404)
-
-	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/127.0.0.1", nil)
-	req.Header.Set("Accept", "application/vnd.violetear.v2")
-	router.ServeHTTP(w, req)
-	expect(t, w.Body.String(), "ip v2")
-
-	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/AA4C820E-4D9D-4385-B796-77D12C825306", nil)
-	router.ServeHTTP(w, req)
-	expect(t, w.Body.String(), "uuid")
-
-	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/AA4C820E-4D9D-4385-B796-77D12C825306", nil)
-	req.Header.Set("Accept", "application/vnd.violetear.XX")
-	router.ServeHTTP(w, req)
-	expect(t, w.Code, 404)
-
-	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/AA4C820E-4D9D-4385-B796-77D12C825306", nil)
-	req.Header.Set("Accept", "application/vnd.violetear.v2")
-	router.ServeHTTP(w, req)
-	expect(t, w.Body.String(), "uuid v2")
-
-	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/catch/any", nil)
-	router.ServeHTTP(w, req)
-	expect(t, w.Body.String(), "*")
-
-	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/catch/any", nil)
-	req.Header.Set("Accept", "application/vnd.violetear.XX")
-	router.ServeHTTP(w, req)
-	expect(t, w.Code, 404)
-
-	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/catch/any", nil)
-	req.Header.Set("Accept", "application/vnd.violetear.v2")
-	router.ServeHTTP(w, req)
-	expect(t, w.Body.String(), "* v2")
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest(tc.reqMethod, tc.path, nil)
+			if tc.version != "" {
+				req.Header.Set("Accept", tc.version)
+			}
+			router.ServeHTTP(w, req)
+			res := w.Result()
+			defer res.Body.Close()
+			b, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			expect(t, string(bytes.TrimSpace(b)), tc.body)
+			expect(t, res.StatusCode, tc.code)
+		})
+	}
 }
