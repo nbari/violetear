@@ -8,7 +8,7 @@ go:
   - 1.9.x
   - 1.8.x
   - 1.7.x
-  - tip
+  - master
 
 before_install:
   - go get github.com/axw/gocov/gocov
