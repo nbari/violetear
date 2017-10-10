@@ -85,79 +85,6 @@ func TestResponseWriterLogger(t *testing.T) {
 	expect(t, w.HeaderMap.Get("rid"), "123")
 }
 
-func TestResponseWriterLoggerStatus200(t *testing.T) {
-	mylogger := func(w *ResponseWriter, r *http.Request) {
-		expect(t, r.URL.String(), "/test")
-		expect(t, w.RequestID(), "123")
-		expect(t, w.Size(), 0)
-		expect(t, w.Status(), 200)
-	}
-	router := New()
-	router.LogRequests = true
-	router.RequestID = "rid"
-	router.Logger = mylogger
-	router.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
-		expect(t, w.Header().Get("rid"), "123")
-	})
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/test", nil)
-	req.Header.Set("rid", "123")
-	router.ServeHTTP(w, req)
-	expect(t, w.Code, 200)
-	expect(t, w.HeaderMap.Get("rid"), "123")
-}
-
-func TestResponseWriterLoggerStatus405(t *testing.T) {
-	mylogger := func(w *ResponseWriter, r *http.Request) {
-		expect(t, r.URL.String(), "/test")
-		expect(t, w.RequestID(), "123")
-		expect(t, w.Status(), 405)
-	}
-	router := New()
-	router.LogRequests = true
-	router.RequestID = "rid"
-	router.Logger = mylogger
-	router.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
-		expect(t, w.Header().Get("rid"), "123")
-	}, "POST")
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/test", nil)
-	req.Header.Set("rid", "123")
-	router.ServeHTTP(w, req)
-	expect(t, w.Code, 405)
-	expect(t, w.HeaderMap.Get("rid"), "123")
-}
-
-func TestResponseWriterNoLogger(t *testing.T) {
-	router := New()
-	router.LogRequests = false
-	router.RequestID = "rid"
-	router.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
-		expect(t, w.Header().Get("rid"), "123")
-	})
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/test", nil)
-	req.Header.Set("rid", "123")
-	router.ServeHTTP(w, req)
-	expect(t, w.Code, 200)
-	expect(t, w.HeaderMap.Get("rid"), "123")
-}
-
-func TestResponseWriterNoLogger405(t *testing.T) {
-	router := New()
-	router.LogRequests = false
-	router.RequestID = "rid"
-	router.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
-		expect(t, w.Header().Get("rid"), "123")
-	}, "POST")
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/test", nil)
-	req.Header.Set("rid", "123")
-	router.ServeHTTP(w, req)
-	expect(t, w.Code, 405)
-	expect(t, w.HeaderMap.Get("rid"), "123")
-}
-
 func TestResponseWriterLogger499(t *testing.T) {
 	router := New()
 	router.Verbose = false
@@ -174,4 +101,46 @@ func TestResponseWriterLogger499(t *testing.T) {
 		Timeout: time.Duration(time.Millisecond),
 	}
 	client.Get(ts.URL)
+}
+
+func TestResponseWriterXX(t *testing.T) {
+	tt := []struct {
+		name          string
+		path          string
+		reqMethod     string
+		handlerMethod string
+		rid           string
+		ridValue      string
+		code          int
+		logRequests   bool
+		logger        bool
+	}{
+		{"no logger", "/test", "GET", "GET", "rid", "123", 200, false, false},
+		{"no logger 405", "/test", "GET", "POST", "rid", "123", 405, false, false},
+		{"logger", "/test", "GET", "GET", "rid", "123", 200, true, true},
+		{"logger 405", "/test", "GET", "POST", "rid", "123", 405, true, true},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			router := New()
+			if tc.logger {
+				router.Logger = func(w *ResponseWriter, r *http.Request) {
+					expect(t, r.URL.String(), tc.path)
+					expect(t, w.RequestID(), tc.ridValue)
+					expect(t, w.Status(), tc.code)
+				}
+			}
+			router.RequestID = tc.rid
+			router.HandleFunc(tc.path, func(w http.ResponseWriter, r *http.Request) {
+				expect(t, w.Header().Get(tc.rid), tc.ridValue)
+			}, tc.handlerMethod)
+			router.LogRequests = tc.logRequests
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest(tc.reqMethod, tc.path, nil)
+			req.Header.Set(tc.rid, tc.ridValue)
+			router.ServeHTTP(w, req)
+			res := w.Result()
+			expect(t, res.StatusCode, tc.code)
+		})
+	}
 }
