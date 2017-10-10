@@ -224,7 +224,7 @@ func TestTrieGet(t *testing.T) {
 }
 
 func TestSplitPath(t *testing.T) {
-	var testPaths = []struct {
+	tt := []struct {
 		in  string
 		out []string
 	}{
@@ -241,9 +241,9 @@ func TestSplitPath(t *testing.T) {
 	}
 
 	trie := &Trie{}
-	for _, tt := range testPaths {
-		k, p := trie.SplitPath(tt.in)
-		expect(t, k, tt.out[0])
-		expect(t, p, tt.out[1])
+	for _, tc := range tt {
+		k, p := trie.SplitPath(tc.in)
+		expect(t, k, tc.out[0])
+		expect(t, p, tc.out[1])
 	}
 }
