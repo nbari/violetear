@@ -62,29 +62,6 @@ func TestResponseWriterWriteHeader(t *testing.T) {
 	expect(t, rw.Size(), 0)
 }
 
-func TestResponseWriterLogger(t *testing.T) {
-	mylogger := func(w *ResponseWriter, r *http.Request) {
-		expect(t, r.URL.String(), "/test")
-		expect(t, w.RequestID(), "123")
-		expect(t, w.Size(), 11)
-		expect(t, w.Status(), 200)
-	}
-	router := New()
-	router.LogRequests = true
-	router.RequestID = "rid"
-	router.Logger = mylogger
-	router.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
-		expect(t, w.Header().Get("rid"), "123")
-		w.Write([]byte("hello world"))
-	})
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/test", nil)
-	req.Header.Set("rid", "123")
-	router.ServeHTTP(w, req)
-	expect(t, w.Code, 200)
-	expect(t, w.HeaderMap.Get("rid"), "123")
-}
-
 func TestResponseWriterLogger499(t *testing.T) {
 	router := New()
 	router.Verbose = false
@@ -114,11 +91,17 @@ func TestResponseWriterXX(t *testing.T) {
 		code          int
 		logRequests   bool
 		logger        bool
+		body          string
 	}{
-		{"no logger", "/test", "GET", "GET", "rid", "123", 200, false, false},
-		{"no logger 405", "/test", "GET", "POST", "rid", "123", 405, false, false},
-		{"logger", "/test", "GET", "GET", "rid", "123", 200, true, true},
-		{"logger 405", "/test", "GET", "POST", "rid", "123", 405, true, true},
+		{"no logger", "/test", "GET", "GET", "rid", "123", 200, false, false, ""},
+		{"no logger 405", "/test", "GET", "POST", "rid", "123", 405, false, false, ""},
+		{"logger", "/test", "GET", "GET", "rid", "123", 200, true, true, ""},
+		{"logger /", "/", "PUT", "", "rid", "123", 200, true, true, ""},
+		{"logger /", "/", "DELETE", "", "request-id", "foo", 200, true, true, ""},
+		{"logger 405", "/test", "GET", "POST", "rid", "123", 405, true, true, ""},
+		{"body", "/test", "GET", "GET", "rid", "123", 200, true, true, "Hello world"},
+		{"body -logger", "/test", "GET", "GET", "rid", "123", 200, true, false, "Hello world"},
+		{"body -logger -logRequests", "/test", "GET", "GET", "rid", "123", 200, false, false, "Hello world"},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
@@ -128,11 +111,17 @@ func TestResponseWriterXX(t *testing.T) {
 					expect(t, r.URL.String(), tc.path)
 					expect(t, w.RequestID(), tc.ridValue)
 					expect(t, w.Status(), tc.code)
+					if tc.body != "" {
+						expect(t, w.Size(), len(tc.body))
+					}
 				}
 			}
 			router.RequestID = tc.rid
 			router.HandleFunc(tc.path, func(w http.ResponseWriter, r *http.Request) {
 				expect(t, w.Header().Get(tc.rid), tc.ridValue)
+				if tc.body != "" {
+					w.Write([]byte(tc.body))
+				}
 			}, tc.handlerMethod)
 			router.LogRequests = tc.logRequests
 			w := httptest.NewRecorder()
