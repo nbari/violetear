@@ -80,7 +80,7 @@ func TestResponseWriterLogger499(t *testing.T) {
 	client.Get(ts.URL)
 }
 
-func TestResponseWriterXX(t *testing.T) {
+func TestResponseWriter(t *testing.T) {
 	tt := []struct {
 		name          string
 		path          string

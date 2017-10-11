@@ -21,7 +21,7 @@ func TestXXX(t *testing.T) {
 }
 
 func TestGetParam(t *testing.T) {
-	testCases := []struct {
+	tt := []struct {
 		path          string
 		requestPath   string
 		param         string
@@ -133,25 +133,27 @@ func TestGetParam(t *testing.T) {
 		obtainedParam string
 	)
 
-	for _, v := range testCases {
-		testHandler := func(w http.ResponseWriter, r *http.Request) {
-			if v.index > 0 {
-				obtainedParam = GetParam(v.param, r, v.index)
-			} else {
-				obtainedParam = GetParam(v.param, r)
+	for _, tc := range tt {
+		t.Run(tc.path, func(t *testing.T) {
+			testHandler := func(w http.ResponseWriter, r *http.Request) {
+				if tc.index > 0 {
+					obtainedParam = GetParam(tc.param, r, tc.index)
+				} else {
+					obtainedParam = GetParam(tc.param, r)
+				}
+				expect(t, obtainedParam, tc.expectedParam)
 			}
-			expect(t, obtainedParam, v.expectedParam)
-		}
-		err := router.HandleFunc(v.path, testHandler, "GET")
-		expect(t, err != nil, v.err)
-		w = httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", v.requestPath, nil)
-		router.ServeHTTP(w, req)
+			err := router.HandleFunc(tc.path, testHandler, "GET")
+			expect(t, err != nil, tc.err)
+			w = httptest.NewRecorder()
+			req, _ := http.NewRequest("GET", tc.requestPath, nil)
+			router.ServeHTTP(w, req)
+		})
 	}
 }
 
 func TestGetParams(t *testing.T) {
-	testCases := []struct {
+	tt := []struct {
 		path          string
 		requestPath   string
 		param         string
@@ -230,15 +232,17 @@ func TestGetParams(t *testing.T) {
 		obtainedParams []string
 	)
 
-	for _, v := range testCases {
-		testHandler := func(w http.ResponseWriter, r *http.Request) {
-			obtainedParams = GetParams(v.param, r)
-			expectDeepEqual(t, obtainedParams, v.expectedParam)
-		}
-		router.HandleFunc(v.path, testHandler, "GET")
-		w = httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", v.requestPath, nil)
-		router.ServeHTTP(w, req)
+	for _, tc := range tt {
+		t.Run(tc.path, func(t *testing.T) {
+			testHandler := func(w http.ResponseWriter, r *http.Request) {
+				obtainedParams = GetParams(tc.param, r)
+				expectDeepEqual(t, obtainedParams, tc.expectedParam)
+			}
+			router.HandleFunc(tc.path, testHandler, "GET")
+			w = httptest.NewRecorder()
+			req, _ := http.NewRequest("GET", tc.requestPath, nil)
+			router.ServeHTTP(w, req)
+		})
 	}
 }
 
