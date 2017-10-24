@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 )
 
 func TestResponseWriterStatus(t *testing.T) {
@@ -62,6 +61,7 @@ func TestResponseWriterWriteHeader(t *testing.T) {
 	expect(t, rw.Size(), 0)
 }
 
+/*
 func TestResponseWriterLogger499(t *testing.T) {
 	router := New()
 	router.Verbose = false
@@ -79,6 +79,7 @@ func TestResponseWriterLogger499(t *testing.T) {
 	}
 	client.Get(ts.URL)
 }
+*/
 
 func TestResponseWriter(t *testing.T) {
 	tt := []struct {
