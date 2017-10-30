@@ -126,10 +126,7 @@ func (r *Router) Handle(path string, handler http.Handler, httpMethods ...string
 		log.Printf("Adding path: %s [%s] %s", path, methods, version)
 	}
 
-	if err := r.routes.Set(pathParts, handler, methods, version); err != nil {
-		return err
-	}
-	return nil
+	return r.routes.Set(pathParts, handler, methods, version)
 }
 
 // HandleFunc add a route to the router (path, http.HandlerFunc, methods)

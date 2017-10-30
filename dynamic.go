@@ -11,7 +11,7 @@ type dynamicSet map[string]*regexp.Regexp
 
 func (d dynamicSet) Set(name, regex string) error {
 	if !strings.HasPrefix(name, ":") {
-		return errors.New("Dynamic route name must start with a colon ':'")
+		return errors.New("dynamic route name must start with a colon ':'")
 	}
 
 	// fix regex

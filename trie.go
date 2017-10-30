@@ -72,7 +72,7 @@ func (t *Trie) Set(path []string, handler http.Handler, method, version string) 
 	}
 
 	if key == "*" {
-		return errors.New("Catch-all \"*\" must always be the final path element")
+		return errors.New("catch-all \"*\" must always be the final path element")
 	}
 
 	return node.Set(newpath, handler, method, version)

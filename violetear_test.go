@@ -461,14 +461,20 @@ func TestContextNamedParams(t *testing.T) {
 	expect(t, w.Code, 200)
 }
 
+type contextKey string
+
+func (c contextKey) String() string {
+	return string(c)
+}
+
 func TestContextMiddleware(t *testing.T) {
 	router := New()
 
 	// Test middleware with context
 	m1 := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), "m1", "m1")
-			ctx = context.WithValue(ctx, "key", 1)
+			ctx := context.WithValue(r.Context(), contextKey("m1"), "m1")
+			ctx = context.WithValue(ctx, contextKey("key"), 1)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -476,16 +482,16 @@ func TestContextMiddleware(t *testing.T) {
 	m2 := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			params := r.Context().Value(ParamsKey).(Params)
-			ctx := context.WithValue(r.Context(), "m2", "m2")
-			ctx = context.WithValue(ctx, "uuid val", params[":uuid"])
+			ctx := context.WithValue(r.Context(), contextKey("m2"), "m2")
+			ctx = context.WithValue(ctx, contextKey("uuid val"), params[":uuid"])
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 
 	m3 := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), "m3", "m3")
-			ctx = context.WithValue(ctx, "ctx", "string")
+			ctx := context.WithValue(r.Context(), contextKey("m3"), "m3")
+			ctx = context.WithValue(ctx, contextKey("ctx"), "string")
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -496,13 +502,13 @@ func TestContextMiddleware(t *testing.T) {
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		params := r.Context().Value(ParamsKey).(Params)
-		expect(t, r.Context().Value("m1"), "m1")
-		expect(t, r.Context().Value("m2"), "m2")
-		expect(t, r.Context().Value("m3"), "m3")
-		expect(t, r.Context().Value("uuid val"), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
+		expect(t, r.Context().Value(contextKey("m1")), "m1")
+		expect(t, r.Context().Value(contextKey("m2")), "m2")
+		expect(t, r.Context().Value(contextKey("m3")), "m3")
+		expect(t, r.Context().Value(contextKey("uuid val")), "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
 		expect(t, params[":uuid"], "A97F0AF3-043D-4376-82BE-CD6C1A524E0E")
-		expect(t, r.Context().Value("ctx"), "string")
-		expect(t, r.Context().Value("key"), 1)
+		expect(t, r.Context().Value(contextKey("ctx")), "string")
+		expect(t, r.Context().Value(contextKey("key")), 1)
 		w.Write([]byte("named params"))
 	}
 
