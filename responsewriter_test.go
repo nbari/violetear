@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestResponseWriterStatus(t *testing.T) {
@@ -61,26 +62,6 @@ func TestResponseWriterWriteHeader(t *testing.T) {
 	expect(t, rw.Size(), 0)
 }
 
-/*
-func TestResponseWriterLogger499(t *testing.T) {
-	router := New()
-	router.Verbose = false
-	router.LogRequests = true
-	router.Logger = func(w *ResponseWriter, r *http.Request) {
-		expect(t, w.Status(), 499)
-	}
-	router.HandleFunc("*", func(w http.ResponseWriter, r *http.Request) {
-		time.Sleep(10 * time.Millisecond)
-	})
-	ts := httptest.NewServer(router)
-	defer ts.Close()
-	client := &http.Client{
-		Timeout: time.Duration(time.Millisecond),
-	}
-	client.Get(ts.URL)
-}
-*/
-
 func TestResponseWriter(t *testing.T) {
 	tt := []struct {
 		name          string
@@ -133,4 +114,33 @@ func TestResponseWriter(t *testing.T) {
 			expect(t, res.StatusCode, tc.code)
 		})
 	}
+}
+
+func TestResponseWriterLoggerCloseConnection(t *testing.T) {
+	router := New()
+	router.Verbose = false
+	router.LogRequests = true
+	router.Logger = func(w *ResponseWriter, r *http.Request) {
+		expect(t, w.Status(), 200)
+	}
+	router.HandleFunc("*", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		ch := make(chan struct{})
+		go func(ch chan struct{}) {
+			time.Sleep(10 * time.Millisecond)
+			ch <- struct{}{}
+		}(ch)
+		select {
+		case <-ch:
+			t.Error("This should not have happened")
+		case <-ctx.Done():
+			t.Log("Send status 499 or do something else")
+		}
+	})
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+	client := &http.Client{
+		Timeout: time.Duration(time.Millisecond),
+	}
+	client.Get(ts.URL)
 }
