@@ -31,7 +31,7 @@ spend their free time creating things the rest the community can use.
 Don't have time to contribute? No worries, here are some other ways to show your
 support for **violetear**:
 
-- star the [project](https://github.com/nbari/violetear)
+- star :star: the [project](https://github.com/nbari/violetear)
 - tweet your support for **violetear**
 
 ## Issues
