@@ -669,12 +669,37 @@ func TestReturnedTrieNode(t *testing.T) {
 }
 
 func TestReturnedTrieChaining(t *testing.T) {
-	router := New()
-	router.LogRequests = true
-	node := router.HandleFunc("/foo/bar/zzz", func(w http.ResponseWriter, r *http.Request) {}, "GET").Name("3z")
-	expect(t, node.name, "3z")
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/foo/bar/zzz", nil)
-	router.ServeHTTP(w, req)
-	expect(t, w.Code, 200)
+	tt := []struct {
+		name      string
+		path      string
+		routeName string
+	}{
+		{"root", "/", "root"},
+		{"foo", "/foo", ""},
+		{"3z", "/foo/bar/zzz", "3z"},
+		{"test*", "/test/*", "catch-all"},
+		{"all*", "/all/*", ""},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			handler := func(w http.ResponseWriter, r *http.Request) {
+				if tc.routeName != "" {
+					params := r.Context().Value(ParamsKey).(Params)
+					expect(t, params["name"], tc.routeName)
+				}
+				w.Write([]byte("body"))
+			}
+			router := New()
+			if tc.routeName != "" {
+				router.HandleFunc(tc.path, handler).Name(tc.routeName)
+			} else {
+				router.HandleFunc(tc.path, handler)
+			}
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest("GET", tc.path, nil)
+			router.ServeHTTP(w, req)
+			expect(t, w.Code, 200)
+			expect(t, w.Body.String(), "body")
+		})
+	}
 }

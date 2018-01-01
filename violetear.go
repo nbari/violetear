@@ -44,7 +44,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 )
 
@@ -87,6 +86,9 @@ type Router struct {
 
 	// Verbose
 	Verbose bool
+
+	// Error resulted from building a route.
+	err error
 }
 
 // New returns a new initialized router.
@@ -112,8 +114,10 @@ func (r *Router) Handle(path string, handler http.Handler, httpMethods ...string
 	for _, p := range pathParts {
 		if strings.HasPrefix(p, ":") {
 			if _, ok := r.dynamicRoutes[p]; !ok {
-				fmt.Fprintf(os.Stderr, "[%s] not found, need to add it using AddRegex(%q, `your regex`", p, p)
-				os.Exit(1)
+				r.err = fmt.Errorf("[%s] not found, need to add it using AddRegex(%q, `your regex`", p, p)
+				return nil
+				//fmt.Fprintf(os.Stderr, "[%s] not found, need to add it using AddRegex(%q, `your regex`", p, p)
+				//os.Exit(1)
 			}
 		}
 	}
@@ -130,8 +134,8 @@ func (r *Router) Handle(path string, handler http.Handler, httpMethods ...string
 
 	trie, err := r.routes.Set(pathParts, handler, methods, version)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		r.err = err
+		return nil
 	}
 	return trie
 }
@@ -175,6 +179,12 @@ func (r *Router) checkMethod(node *Trie, method string) http.Handler {
 // dispatch request
 func (r *Router) dispatch(node *Trie, key, path, method, version string, leaf bool, params Params) (http.Handler, Params) {
 	catchall := false
+	if node.name != "" {
+		if params == nil {
+			params = Params{}
+		}
+		params.Add("name", node.name)
+	}
 	if len(node.Handler) > 0 && leaf {
 		return r.checkMethod(node, method), params
 	} else if node.HasRegex {
@@ -222,6 +232,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// panic handler
 	defer func() {
 		if err := recover(); err != nil {
+			log.Println(err)
 			if r.PanicHandler != nil {
 				r.PanicHandler(w, req)
 			} else {

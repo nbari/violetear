@@ -36,3 +36,10 @@ func BenchmarkRouterDynamic(b *testing.B) {
 	r, _ := http.NewRequest("GET", "/test/foo", nil)
 	benchRequest(b, router, r)
 }
+
+func BenchmarkRouterStaticWithName(b *testing.B) {
+	router := New()
+	router.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {}, "GET,HEAD").Name("hello")
+	r, _ := http.NewRequest("GET", "/hello", nil)
+	benchRequest(b, router, r)
+}
