@@ -18,6 +18,7 @@ type Trie struct {
 	HasCatchall bool
 	HasRegex    bool
 	Node        []*Trie
+	name        string
 	path        string
 	version     string
 }
@@ -33,9 +34,9 @@ func (t *Trie) contains(path, version string) (*Trie, bool) {
 }
 
 // Set adds a node (url part) to the Trie
-func (t *Trie) Set(path []string, handler http.Handler, method, version string) error {
+func (t *Trie) Set(path []string, handler http.Handler, method, version string) (*Trie, error) {
 	if len(path) == 0 {
-		return errors.New("path cannot be empty")
+		return nil, errors.New("path cannot be empty")
 	}
 
 	key := path[0]
@@ -68,11 +69,11 @@ func (t *Trie) Set(path []string, handler http.Handler, method, version string) 
 		for _, v := range methods {
 			node.Handler = append(node.Handler, MethodHandler{strings.ToUpper(strings.TrimSpace(v)), handler})
 		}
-		return nil
+		return node, nil
 	}
 
 	if key == "*" {
-		return errors.New("catch-all \"*\" must always be the final path element")
+		return nil, errors.New("catch-all \"*\" must always be the final path element")
 	}
 
 	return node.Set(newpath, handler, method, version)

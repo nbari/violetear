@@ -6,7 +6,7 @@ import (
 
 func TestTrieSetEmpty(t *testing.T) {
 	trie := &Trie{}
-	err := trie.Set([]string{}, nil, "ALL", "")
+	_, err := trie.Set([]string{}, nil, "ALL", "")
 	if err == nil {
 		t.Error("path cannot be empty")
 	}
@@ -39,7 +39,7 @@ func TestTrieSet(t *testing.T) {
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			err := trie.Set(tc.path, nil, tc.method, tc.version)
+			_, err := trie.Set(tc.path, nil, tc.method, tc.version)
 			expect(t, err != nil, tc.err)
 		})
 	}
@@ -69,7 +69,7 @@ func TestTrieGet(t *testing.T) {
 		{[]string{"alpha", "*"}, "ALL", ""},
 	}
 	for _, tc := range tt {
-		err := trie.Set(tc.path, nil, tc.method, tc.version)
+		_, err := trie.Set(tc.path, nil, tc.method, tc.version)
 		expect(t, err, nil)
 	}
 

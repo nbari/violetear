@@ -293,7 +293,7 @@ func TestHandleFunc(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			router := New()
-			err := router.HandleFunc(tc.path, func(w http.ResponseWriter, r *http.Request) {})
+			_, err := router.HandleFunc(tc.path, func(w http.ResponseWriter, r *http.Request) {})
 			expect(t, err != nil, tc.err)
 		})
 	}
@@ -347,7 +347,7 @@ func TestNotFoundHandler(t *testing.T) {
 func TestLogRequests(t *testing.T) {
 	router := New()
 	router.LogRequests = true
-	err := router.HandleFunc("/logrequest", func(w http.ResponseWriter, r *http.Request) {})
+	_, err := router.HandleFunc("/logrequest", func(w http.ResponseWriter, r *http.Request) {})
 	expect(t, err, nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("PUT", "/logrequest", nil)
@@ -359,7 +359,7 @@ func TestRequestId(t *testing.T) {
 	router := New()
 	router.LogRequests = true
 	router.RequestID = "Request_log_id"
-	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	_, err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 	expect(t, err, nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
@@ -373,7 +373,7 @@ func TestRequestIdNoLogRequests(t *testing.T) {
 	router := New()
 	router.LogRequests = false
 	router.RequestID = "Request_log_id"
-	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	_, err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 	expect(t, err, nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
@@ -387,7 +387,7 @@ func TestRequestIdCreate(t *testing.T) {
 	router := New()
 	router.LogRequests = true
 	router.RequestID = "Request-ID"
-	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	_, err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 	expect(t, err, nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)

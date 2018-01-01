@@ -99,7 +99,7 @@ func New() *Router {
 }
 
 // Handle registers the handler for the given pattern (path, http.Handler, methods).
-func (r *Router) Handle(path string, handler http.Handler, httpMethods ...string) error {
+func (r *Router) Handle(path string, handler http.Handler, httpMethods ...string) (*Trie, error) {
 	var version string
 	if i := strings.Index(path, "#"); i != -1 {
 		version = path[i+1:]
@@ -111,7 +111,7 @@ func (r *Router) Handle(path string, handler http.Handler, httpMethods ...string
 	for _, p := range pathParts {
 		if strings.HasPrefix(p, ":") {
 			if _, ok := r.dynamicRoutes[p]; !ok {
-				return fmt.Errorf("[%s] not found, need to add it using AddRegex(%q, `your regex`)", p, p)
+				return nil, fmt.Errorf("[%s] not found, need to add it using AddRegex(%q, `your regex`)", p, p)
 			}
 		}
 	}
@@ -130,7 +130,7 @@ func (r *Router) Handle(path string, handler http.Handler, httpMethods ...string
 }
 
 // HandleFunc add a route to the router (path, http.HandlerFunc, methods)
-func (r *Router) HandleFunc(path string, handler http.HandlerFunc, httpMethods ...string) error {
+func (r *Router) HandleFunc(path string, handler http.HandlerFunc, httpMethods ...string) (*Trie, error) {
 	return r.Handle(path, handler, httpMethods...)
 }
 

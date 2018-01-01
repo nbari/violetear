@@ -143,7 +143,7 @@ func TestGetParam(t *testing.T) {
 				}
 				expect(t, obtainedParam, tc.expectedParam)
 			}
-			err := router.HandleFunc(tc.path, testHandler, "GET")
+			_, err := router.HandleFunc(tc.path, testHandler, "GET")
 			expect(t, err != nil, tc.err)
 			w = httptest.NewRecorder()
 			req, _ := http.NewRequest("GET", tc.requestPath, nil)
