@@ -116,8 +116,6 @@ func (r *Router) Handle(path string, handler http.Handler, httpMethods ...string
 			if _, ok := r.dynamicRoutes[p]; !ok {
 				r.err = fmt.Errorf("[%s] not found, need to add it using AddRegex(%q, `your regex`", p, p)
 				return nil
-				//fmt.Fprintf(os.Stderr, "[%s] not found, need to add it using AddRegex(%q, `your regex`", p, p)
-				//os.Exit(1)
 			}
 		}
 	}
@@ -296,4 +294,9 @@ func (r *Router) splitPath(p string) []string {
 		return []string{"/"}
 	}
 	return pathParts
+}
+
+// GetError returns an error resulted from building a route, if any.
+func (r *Router) GetError() error {
+	return r.err
 }
