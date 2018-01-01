@@ -118,3 +118,9 @@ func (t *Trie) SplitPath(path string) (string, string) {
 	}
 	return path, ""
 }
+
+// Name add custom name to node
+func (t *Trie) Name(name string) *Trie {
+	t.name = name
+	return t
+}

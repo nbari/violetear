@@ -44,6 +44,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -99,7 +100,7 @@ func New() *Router {
 }
 
 // Handle registers the handler for the given pattern (path, http.Handler, methods).
-func (r *Router) Handle(path string, handler http.Handler, httpMethods ...string) (*Trie, error) {
+func (r *Router) Handle(path string, handler http.Handler, httpMethods ...string) *Trie {
 	var version string
 	if i := strings.Index(path, "#"); i != -1 {
 		version = path[i+1:]
@@ -111,7 +112,8 @@ func (r *Router) Handle(path string, handler http.Handler, httpMethods ...string
 	for _, p := range pathParts {
 		if strings.HasPrefix(p, ":") {
 			if _, ok := r.dynamicRoutes[p]; !ok {
-				return nil, fmt.Errorf("[%s] not found, need to add it using AddRegex(%q, `your regex`)", p, p)
+				fmt.Fprintf(os.Stderr, "[%s] not found, need to add it using AddRegex(%q, `your regex`", p, p)
+				os.Exit(1)
 			}
 		}
 	}
@@ -126,11 +128,16 @@ func (r *Router) Handle(path string, handler http.Handler, httpMethods ...string
 		log.Printf("Adding path: %s [%s] %s", path, methods, version)
 	}
 
-	return r.routes.Set(pathParts, handler, methods, version)
+	trie, err := r.routes.Set(pathParts, handler, methods, version)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	return trie
 }
 
 // HandleFunc add a route to the router (path, http.HandlerFunc, methods)
-func (r *Router) HandleFunc(path string, handler http.HandlerFunc, httpMethods ...string) (*Trie, error) {
+func (r *Router) HandleFunc(path string, handler http.HandlerFunc, httpMethods ...string) *Trie {
 	return r.Handle(path, handler, httpMethods...)
 }
 

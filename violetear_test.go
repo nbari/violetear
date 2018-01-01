@@ -293,7 +293,7 @@ func TestHandleFunc(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			router := New()
-			_, err := router.HandleFunc(tc.path, func(w http.ResponseWriter, r *http.Request) {})
+			err := router.HandleFunc(tc.path, func(w http.ResponseWriter, r *http.Request) {})
 			expect(t, err != nil, tc.err)
 		})
 	}
@@ -347,7 +347,7 @@ func TestNotFoundHandler(t *testing.T) {
 func TestLogRequests(t *testing.T) {
 	router := New()
 	router.LogRequests = true
-	_, err := router.HandleFunc("/logrequest", func(w http.ResponseWriter, r *http.Request) {})
+	err := router.HandleFunc("/logrequest", func(w http.ResponseWriter, r *http.Request) {})
 	expect(t, err, nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("PUT", "/logrequest", nil)
@@ -359,7 +359,7 @@ func TestRequestId(t *testing.T) {
 	router := New()
 	router.LogRequests = true
 	router.RequestID = "Request_log_id"
-	_, err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 	expect(t, err, nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
@@ -373,7 +373,7 @@ func TestRequestIdNoLogRequests(t *testing.T) {
 	router := New()
 	router.LogRequests = false
 	router.RequestID = "Request_log_id"
-	_, err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 	expect(t, err, nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
@@ -387,7 +387,7 @@ func TestRequestIdCreate(t *testing.T) {
 	router := New()
 	router.LogRequests = true
 	router.RequestID = "Request-ID"
-	_, err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
 	expect(t, err, nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
@@ -654,4 +654,27 @@ func TestVersioning(t *testing.T) {
 			expect(t, res.StatusCode, tc.code)
 		})
 	}
+}
+
+func TestReturnedTrieNode(t *testing.T) {
+	router := New()
+	router.LogRequests = true
+	node := router.HandleFunc("/foo/bar/zzz", func(w http.ResponseWriter, r *http.Request) {}, "GET")
+	node.Name("3z")
+	expect(t, node.name, "3z")
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo/bar/zzz", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+}
+
+func TestReturnedTrieChaining(t *testing.T) {
+	router := New()
+	router.LogRequests = true
+	node := router.HandleFunc("/foo/bar/zzz", func(w http.ResponseWriter, r *http.Request) {}, "GET").Name("3z")
+	expect(t, node.name, "3z")
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foo/bar/zzz", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
 }
