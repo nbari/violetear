@@ -181,7 +181,7 @@ func (r *Router) dispatch(node *Trie, key, path, method, version string, leaf bo
 		if params == nil {
 			params = Params{}
 		}
-		params.Add("name", node.name)
+		params.Add("rname", node.name)
 	}
 	if len(node.Handler) > 0 && leaf {
 		return r.checkMethod(node, method), params

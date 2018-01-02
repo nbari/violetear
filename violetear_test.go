@@ -652,6 +652,7 @@ func TestVersioning(t *testing.T) {
 			}
 			expect(t, string(bytes.TrimSpace(b)), tc.body)
 			expect(t, res.StatusCode, tc.code)
+			expect(t, GetRouteName(req), "")
 		})
 	}
 }
@@ -685,7 +686,8 @@ func TestReturnedTrieChaining(t *testing.T) {
 			handler := func(w http.ResponseWriter, r *http.Request) {
 				if tc.routeName != "" {
 					params := r.Context().Value(ParamsKey).(Params)
-					expect(t, params["name"], tc.routeName)
+					expect(t, params["rname"], tc.routeName)
+					expect(t, GetRouteName(r), tc.routeName)
 				}
 				w.Write([]byte("body"))
 			}

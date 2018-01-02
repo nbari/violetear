@@ -67,3 +67,14 @@ func GetParams(name string, r *http.Request) []string {
 	}
 	return []string{}
 }
+
+// GetRouteName return the name of the route
+func GetRouteName(r *http.Request) string {
+	if params := r.Context().Value(ParamsKey); params != nil {
+		params := params.(Params)
+		if param := params["rname"]; param != nil {
+			return param.(string)
+		}
+	}
+	return ""
+}
