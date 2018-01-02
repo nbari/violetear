@@ -214,6 +214,9 @@ func (r *Router) dispatch(node *Trie, key, path, method, version string, leaf bo
 					params = Params{}
 				}
 				params.Add("*", key)
+				if n.name != "" {
+					params.Add("rname", n.name)
+				}
 				return r.checkMethod(n, method), params
 			}
 		}

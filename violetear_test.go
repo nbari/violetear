@@ -659,12 +659,46 @@ func TestVersioning(t *testing.T) {
 
 func TestReturnedTrieNode(t *testing.T) {
 	router := New()
+	for _, v := range dynamicRoutes {
+		router.AddRegex(v.name, v.regex)
+	}
 	router.LogRequests = true
-	node := router.HandleFunc("/foo/bar/zzz", func(w http.ResponseWriter, r *http.Request) {}, "GET")
+	node := router.HandleFunc("*", func(w http.ResponseWriter, r *http.Request) {
+		expect(t, GetRouteName(r), "catch-all")
+	})
+	node.Name("catch-all")
+	expect(t, node.name, "catch-all")
+	node = router.HandleFunc("/foo/bar/zzz", func(w http.ResponseWriter, r *http.Request) {}, "GET")
 	node.Name("3z")
 	expect(t, node.name, "3z")
+	node = router.HandleFunc(":uuid", func(w http.ResponseWriter, r *http.Request) {
+		expect(t, GetRouteName(r), "uuid")
+	})
+	node.Name("uuid")
+	expect(t, node.name, "uuid")
+	node = router.HandleFunc("/test/:uuid", func(w http.ResponseWriter, r *http.Request) {
+		expect(t, GetRouteName(r), "uuid2")
+	})
+	node.Name("uuid2")
+	expect(t, node.name, "uuid2")
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/foo/bar/zzz", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/a/b/c", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/1fc2c2bd-8e4c-41c6-80a5-f8efa9d265f4", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/1fc2c2bd-8e4c-41c6-80a5-f8efa9d265f", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/test/b732596f-df6d-4f5f-8a78-d5b88cbc0f87", nil)
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
 }
@@ -680,6 +714,7 @@ func TestReturnedTrieChaining(t *testing.T) {
 		{"3z", "/foo/bar/zzz", "3z"},
 		{"test*", "/test/*", "catch-all"},
 		{"all*", "/all/*", ""},
+		{"*", "*", "catch-all"},
 	}
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
