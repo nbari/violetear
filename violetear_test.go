@@ -293,8 +293,8 @@ func TestHandleFunc(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			router := New()
-			err := router.HandleFunc(tc.path, func(w http.ResponseWriter, r *http.Request) {})
-			expect(t, err != nil, tc.err)
+			router.HandleFunc(tc.path, func(w http.ResponseWriter, r *http.Request) {})
+			expect(t, router.GetError() != nil, tc.err)
 		})
 	}
 }
@@ -347,8 +347,8 @@ func TestNotFoundHandler(t *testing.T) {
 func TestLogRequests(t *testing.T) {
 	router := New()
 	router.LogRequests = true
-	err := router.HandleFunc("/logrequest", func(w http.ResponseWriter, r *http.Request) {})
-	expect(t, err, nil)
+	router.HandleFunc("/logrequest", func(w http.ResponseWriter, r *http.Request) {})
+	expect(t, router.GetError(), nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("PUT", "/logrequest", nil)
 	router.ServeHTTP(w, req)
@@ -359,8 +359,8 @@ func TestRequestId(t *testing.T) {
 	router := New()
 	router.LogRequests = true
 	router.RequestID = "Request_log_id"
-	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
-	expect(t, err, nil)
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	expect(t, router.GetError(), nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
 	req.Header.Set("Request_log_id", "5629498000ff0daa102de72aef0001737e7a756e7a756e6369746f2d617069000131000100")
@@ -373,8 +373,8 @@ func TestRequestIdNoLogRequests(t *testing.T) {
 	router := New()
 	router.LogRequests = false
 	router.RequestID = "Request_log_id"
-	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
-	expect(t, err, nil)
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	expect(t, router.GetError(), nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
 	req.Header.Set("Request_log_id", "5629498000ff0daa102de72aef0001737e7a756e7a756e6369746f2d617069000131000100")
@@ -387,8 +387,8 @@ func TestRequestIdCreate(t *testing.T) {
 	router := New()
 	router.LogRequests = true
 	router.RequestID = "Request-ID"
-	err := router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
-	expect(t, err, nil)
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {})
+	expect(t, router.GetError(), nil)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
 	router.ServeHTTP(w, req)
