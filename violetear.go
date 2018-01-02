@@ -31,7 +31,7 @@
 //      router.AddRegex(":uuid", `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
 //
 //      router.HandleFunc("*", catchAll)
-//      router.HandleFunc("/hello/", helloWorld, "GET,HEAD")
+//      router.HandleFunc("/hello", helloWorld, "GET,HEAD")
 //      router.HandleFunc("/root/:uuid/item", handleUUID, "POST,PUT")
 //
 //      log.Fatal(http.ListenAndServe(":8080", router))
