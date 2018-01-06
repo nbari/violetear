@@ -34,7 +34,14 @@
 //      router.HandleFunc("/hello", helloWorld, "GET,HEAD")
 //      router.HandleFunc("/root/:uuid/item", handleUUID, "POST,PUT")
 //
-//      log.Fatal(http.ListenAndServe(":8080", router))
+//      srv := &http.Server{
+//          Addr:           ":8080",
+//          Handler:        router,
+//          ReadTimeout:    5 * time.Second,
+//          WriteTimeout:   7 * time.Second,
+//          MaxHeaderBytes: 1 << 20,
+//      }
+//      log.Fatal(srv.ListenAndServe())
 //  }
 //
 package violetear
@@ -233,7 +240,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// panic handler
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println(err)
+			log.Printf("panic: %s", err)
 			if r.PanicHandler != nil {
 				r.PanicHandler(w, req)
 			} else {

@@ -71,16 +71,9 @@ can also be customised.
 Usage
 -----
 
-http://gopkg.in/nbari/violetear.v2
+Requirementes go >= 1.7 (https://golang.org/pkg/context/ required)
 
-If using ``go >= 1.7`` (using context form the standard library):
-
-    import "gopkg.in/nbari/violetear.v2"
-
-
-If using ``go < 1.7``:
-
-    import "gopkg.in/nbari/violetear.v1"
+    import "github.com/nbari/violetear"
 
 
 **HandleFunc**:
@@ -139,7 +132,15 @@ func main() {
     router.HandleFunc("/method", handlePOST, "POST")
     router.HandleFunc("/:uuid", handleUUID, "GET,HEAD")
 
-    log.Fatal(http.ListenAndServe(":8080", router))
+    srv := &http.Server{
+        Addr:           ":8080",
+        Handler:        router,
+        ReadTimeout:    5 * time.Second,
+        WriteTimeout:   7 * time.Second,
+        MaxHeaderBytes: 1 << 20,
+    }
+    log.Fatal(srv.ListenAndServe())
+
 }
 ```
 
@@ -502,7 +503,14 @@ func main() {
     router.HandleFunc("*", catchAll)
     router.HandleFunc("/:uuid", handleUUID, "GET,HEAD")
 
-    log.Fatal(http.ListenAndServe(":8080", router))
+    srv := &http.Server{
+        Addr:           ":8080",
+        Handler:        router,
+        ReadTimeout:    5 * time.Second,
+        WriteTimeout:   7 * time.Second,
+        MaxHeaderBytes: 1 << 20,
+    }
+    log.Fatal(srv.ListenAndServe())
 }
 ```
 
@@ -514,61 +522,15 @@ In cases where the same named parameter is used multiple times, example:
 
 An slice is created, for getting the values you need to do something like:
 
-        params := r.Context().Value(violetear.ParamsKey).(violetear.Params)
-        uuid := params[":uuid"].([]string)
+    params := r.Context().Value(violetear.ParamsKey).(violetear.Params)
+    uuid := params[":uuid"].([]string)
 
 > Notice the ``:`` prefix when getting the named_parameters
 
 Or by using `GetParams`:
 
-        uuid := violetear.GetParams("uuid")
+    uuid := violetear.GetParams("uuid")
 
 After this you can access the slice like normal:
 
-        fmt.Println(uuid[0], uuid[1])
-
-
-
-## Only for go < 1.7
-
-For been available to use the **Context** ``ctx`` you need to do a type assertion:
-
-    cw := w.(*violetear.ResponseWriter)
-
-To set a key-value pair you need to:
-
-    cw.Set(key, value)
-
-or
-
-    cw.ctx = context.WithValue(cw.ctx, "key", "my-value")
-
-
-To retrieve a value:
-
-    cw.Get(value)
-
-or
-
-    cw.ctx.Value("key")
-
-> You may need [Type assertions](https://golang.org/ref/spec#Type_assertions): ``cw.Get(value).(string)`` depending on your needs.
-
-
-More references:
-
-* https://tip.golang.org/doc/go1.7#context
-* https://justinas.org/alice-painless-middleware-chaining-for-go/
-* http://www.alexedwards.net/blog/making-and-using-middleware
-* https://golang.org/ref/spec#Type_assertions
-
-
-Canonicalized headers issues
-----------------------------
-
-Go version < 1.5 will canonicalize the header (from uppercase to lowercase),
-example:
-
-https://travis-ci.org/nbari/violetear/jobs/81059152#L156 golang 1.4
-
-https://travis-ci.org/nbari/violetear/jobs/81059153#L156 golang 1.5
+    fmt.Println(uuid[0], uuid[1])
