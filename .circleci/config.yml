@@ -5,6 +5,7 @@ workflows:
     jobs:
       - test-latest
       - test-1.11
+      - test-1.12
       - test-1.10
       - test-1.9
       - test-1.8
@@ -17,6 +18,10 @@ jobs:
     steps:
       - checkout
       - run: make test
+  test-1.12:
+    <<: *test-template
+    docker:
+      - image: circleci/golang:1.12
   test-1.11:
     <<: *test-template
     docker:

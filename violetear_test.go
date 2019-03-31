@@ -60,6 +60,7 @@ type testDynamicRoutes struct {
 var dynamicRoutes = []testDynamicRoutes{
 	{":uuid", `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`},
 	{":ip", `^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$`},
+	{":id", `\d+`},
 }
 
 var routes = []testRouter{
@@ -457,6 +458,34 @@ func TestContextNamedParams(t *testing.T) {
 	expect(t, w.Code, 200)
 
 	req, _ = http.NewRequest("GET", "/test/catch-all-context", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 200)
+}
+
+func TestContextNamedParamsFixRegex(t *testing.T) {
+	router := New()
+
+	for _, v := range dynamicRoutes {
+		router.AddRegex(v.name, v.regex)
+	}
+
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		params := r.Context().Value(ParamsKey).(Params)
+		if r.Method == "GET" {
+			expect(t, params[":id"], "123")
+		}
+		w.Write([]byte("fix regex ^...$"))
+	}
+
+	router.HandleFunc("/test/:id", handler, "GET")
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test/foo123bar", nil)
+	router.ServeHTTP(w, req)
+	expect(t, w.Code, 404)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/test/123", nil)
 	router.ServeHTTP(w, req)
 	expect(t, w.Code, 200)
 }

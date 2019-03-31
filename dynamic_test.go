@@ -38,5 +38,5 @@ func TestFixRegex(t *testing.T) {
 	s := make(dynamicSet)
 	s.Set(":name", "az")
 	rx := s[":name"]
-	expect(t, rx.String(), "az")
+	expect(t, rx.String(), "^az$")
 }
