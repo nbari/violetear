@@ -5,8 +5,8 @@ os:
   - osx
 
 go:
-  - "1.15"
-  - "1.16"
+  - "1.19"
+  - "1.18"
   - master
 
 before_install:
